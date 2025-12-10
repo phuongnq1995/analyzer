@@ -1,0 +1,47 @@
+# Server Configuration
+server:
+  port: 8080
+  ssl:
+    enabled: false
+  forward-headers-strategy: framework
+
+servlet:
+  multipart:
+    enabled: true
+    file-size-threshold: 2MB
+    max-file-size: 200MB
+    max-request-size: 200MB
+
+spring:
+  application:
+    name: analyzer
+  datasource:
+    url: ${SUPABASE_DB_URL}
+    username: ${SUPABASE_DB_USER:postgres}
+    password: ${SUPABASE_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+
+embabel:
+  models:
+    default-llm: qwen3:1.7b
+    default-embedding-model: nomic-embed-text:latest
+
+  embedding-services:
+    best: nomic-embed-text:latest
+    cheapest: nomic-embed-text:latest
+
+logging:
+  level:
+    com.embabel.agent: DEBUG
