@@ -1,8 +1,6 @@
 # Server Configuration
 server:
-  port: 8080
-  ssl:
-    enabled: false
+  port: ${PORT:8080}
   forward-headers-strategy: framework
 
 servlet:
@@ -29,9 +27,8 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-    show-sql: true
+        format_sql: false
+    show-sql: false
   flyway:
     enabled: false
     locations: classpath:db/migration
@@ -43,3 +40,11 @@ jwt:
 admin:
   user: admin
   password: admin
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+    health:
+      show-details: always
