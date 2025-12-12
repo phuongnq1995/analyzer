@@ -34,7 +34,7 @@ spring:
     locations: classpath:db/migration
 
 jwt:
-  secret: analy@zer0912-changeit-long-enough-1232asdas2321asd
+  secret: ${JWT_SECRET}
   expiration-ms: 86400000
 
 admin:
