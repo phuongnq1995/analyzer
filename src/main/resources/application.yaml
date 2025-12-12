@@ -33,15 +33,10 @@ spring:
     enabled: false
     locations: classpath:db/migration
 
-embabel:
-  models:
-    default-llm: qwen3:1.7b
-    default-embedding-model: nomic-embed-text:latest
+jwt:
+  secret: analy@zer0912-changeit-long-enough-1232asdas2321asd
+  expiration-ms: 86400000
 
-  embedding-services:
-    best: nomic-embed-text:latest
-    cheapest: nomic-embed-text:latest
-
-logging:
-  level:
-    com.embabel.agent: DEBUG
+admin:
+  user: admin
+  password: admin

@@ -1,11 +1,14 @@
-package org.phuongnq.analyzer.dto;
+package org.phuongnq.analyzer.dto.aff;
 
 import com.opencsv.bean.CsvBindByName;
+import com.opencsv.bean.CsvIgnore;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-public class AffiliateOrderDto {
+public class OrderDto {
 
     public static final String[] FIELDS = {
         "orderId",
@@ -56,6 +59,12 @@ public class AffiliateOrderDto {
         "subId5",
         "channel"
     };
+
+    @CsvIgnore
+    private Long id;
+
+    @CsvIgnore
+    private Long sId;
 
     @CsvBindByName(column = "ID đơn hàng")
     private String orderId;
@@ -148,7 +157,7 @@ public class AffiliateOrderDto {
     private String commissionFromSeller;
 
     @CsvBindByName(column = "Tổng hoa hồng đơn hàng(₫)")
-    private String totalOrderCommission;
+    private BigDecimal totalOrderCommission;
 
     @CsvBindByName(column = "Tên MNC đã liên kết")
     private String mcnName;
@@ -166,7 +175,7 @@ public class AffiliateOrderDto {
     private String agreedAffiliateMarketingCommissionRate;
 
     @CsvBindByName(column = "Hoa hồng ròng tiếp thị liên kết(₫)")
-    private String netAffiliateMarketingCommission;
+    private BigDecimal netAffiliateMarketingCommission;
 
     @CsvBindByName(column = "Trạng thái sản phẩm liên kết")
     private String linkedProductStatus;

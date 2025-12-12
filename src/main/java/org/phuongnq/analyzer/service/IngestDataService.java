@@ -1,41 +1,50 @@
 package org.phuongnq.analyzer.service;
 
+import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.phuongnq.analyzer.dto.AdsDto;
-import org.phuongnq.analyzer.dto.AffiliateOrderDto;
-import org.phuongnq.analyzer.dto.ClickDto;
+import lombok.extern.slf4j.Slf4j;
+import org.phuongnq.analyzer.dto.aff.AdsDto;
+import org.phuongnq.analyzer.dto.aff.OrderDto;
+import org.phuongnq.analyzer.dto.req.DateRange;
+import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.BatchOperation;
-import org.phuongnq.analyzer.repository.PostRepository;
 import org.phuongnq.analyzer.utils.CSVHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IngestDataService {
 
     private final CSVHelper csvHelper;
-
-    private final PostRepository postRepository;
     private final BatchOperation batchOperation;
+    private final AffQuery affQuery;
+    private final UserService service;
 
     @Transactional
-    public void ingestClicks(MultipartFile file) {
-        List<ClickDto> clicks = csvHelper.readClicksFromCsv(file);
-        batchOperation.batchInsertOrUpdateCLicks(clicks);
+    public void ingestOrders(MultipartFile file, DateRange input) {
+        Long sid = service.getCurrentShopId();
+        List<OrderDto> orders = csvHelper.readOrderFromCsv(file);
+        int count = affQuery.cleanOrdersData(sid, input);
+        log.info("Deleted {} rows of orders from {} to {}", count, input.getFromDate(), input.getToDate());
+        batchOperation.batchInsertOrUpdateOrders(sid, orders);
     }
 
     @Transactional
-    public void ingestOrders(MultipartFile file) {
-        List<AffiliateOrderDto> orders = csvHelper.readOrderFromCsv(file);
-        batchOperation.batchInsertOrUpdateOrders(orders);
-    }
-
-    @Transactional
-    public void ingestAds(MultipartFile file) {
+    public void ingestAds(MultipartFile file, DateRange input) {
+        Long sid = service.getCurrentShopId();
         List<AdsDto> ads = csvHelper.readAdFromCsv(file);
-        batchOperation.batchInsertOrUpdateAds(ads);
+        int count = affQuery.cleanAdsData(sid, input);
+        log.info("Deleted {} rows of ads from {} to {}", count, input.getFromDate(), input.getToDate());
+
+        batchOperation.batchInsertOrUpdateAds(sid, ads);
+    }
+
+    private String sumBigDecimal(String bd1, String bd2) {
+        return new BigDecimal(bd1).add(new BigDecimal(bd2)).toString();
     }
 }

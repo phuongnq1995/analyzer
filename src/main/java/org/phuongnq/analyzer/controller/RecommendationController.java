@@ -1,6 +1,7 @@
 package org.phuongnq.analyzer.controller;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.phuongnq.analyzer.query.model.AggregationByDateResult;
@@ -13,24 +14,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/stats")
+@RequestMapping("/api/recommendation")
 @RequiredArgsConstructor
-public class StatisticController {
+public class RecommendationController {
 
     private final AggregationStatisticService service;
 
     @GetMapping
-    public ResponseEntity<List<AggregationByDateResult>> get(
-        @RequestParam(value = "from", required = false) LocalDate from, @RequestParam(value = "to", required = false) LocalDate to) {
-        if (to == null) {
-            to = LocalDate.now();
-        }
-        return ResponseEntity.ok(service.getCompareAggregationStatistics(from, to));
+    public ResponseEntity<List> get() {
+        return ResponseEntity.ok(Collections.emptyList());
     }
 
-    @GetMapping("/compare")
-    public ResponseEntity<List<CampaignEfficiency>> compare(
-        @RequestParam(value = "from") LocalDate from, @RequestParam(value = "to") LocalDate to) {
-        return ResponseEntity.ok(service.getMarketingEfficiency(from, to));
-    }
 }

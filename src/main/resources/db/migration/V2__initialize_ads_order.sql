@@ -3,16 +3,10 @@ CREATE TABLE post (
   name                VARCHAR(2500)
 );
 
-CREATE TABLE click (
-  id               VARCHAR(50)         PRIMARY KEY,
-  click_time       TIMESTAMP WITHOUT TIME ZONE,
-  area_zone        VARCHAR(125),
-  sub_ids          VARCHAR(250),
-  channel          VARCHAR(250)
-);
-
-CREATE TABLE affiliate_orders (
-    orderId                         VARCHAR(50) PRIMARY KEY,
+CREATE TABLE orders (
+    id                              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sId                             BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+    orderId                         VARCHAR(50),
     orderStatus                     VARCHAR(100),
     checkoutId                      VARCHAR(50),
     orderTime                       TIMESTAMP WITHOUT TIME ZONE,
@@ -62,11 +56,12 @@ CREATE TABLE affiliate_orders (
 );
 
 CREATE TABLE ads (
-    id                  VARCHAR(255) PRIMARY KEY,
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
     campaignName        VARCHAR(255),
     adGroupName         VARCHAR(255),
-    adName              VARCHAR(255),
     date                DATE,
+    adName              VARCHAR(255),
     campaignId          VARCHAR(50),
     deliveryStatus      VARCHAR(50),
     deliveryLevel       VARCHAR(50),
@@ -75,22 +70,26 @@ CREATE TABLE ads (
     frequency           DECIMAL(10,4),
     attributionSetting  VARCHAR(255),
     resultType          VARCHAR(255),
-    results             INT(18,4),
+    results             INT,
     amountSpent         DECIMAL(18,2)
 );
 
+CREATE INDEX idx_orders_sid_clickTime ON orders (sId, clickTime);
+CREATE INDEX idx_ads_sid_date ON ads (sId, date);
+
 CREATE VIEW campaignDay AS
-SELECT (date::date) AS dt, lower(campaignName),
+SELECT (date::date) AS dt, lower(campaignName), sid
 COALESCE(SUM(results),0) AS results,
 COALESCE(SUM(amountSpent),0) AS spent
 FROM ads
-GROUP BY dt, campaignName
-order by dt, campaignName;
+GROUP BY dt, campaignName, sid
+order by dt, campaignName, sid;
 
 CREATE VIEW offerDay AS
-SELECT (clickTime::date) AS dt, subId1, COUNT(DISTINCT orderId) AS orders,
+SELECT (clickTime::date) AS dt, subId1, sid
+COUNT(DISTINCT orderId) AS orders,
 COALESCE(SUM(netAffiliateMarketingCommission),0) AS commission,
 COALESCE(SUM(orderValue),0) AS revenue
-FROM affiliate_orders
-GROUP BY subId1, dt
-order by dt, subId1;
+FROM orders
+GROUP BY subId1, dt, sid
+order by dt, subId1, sid;

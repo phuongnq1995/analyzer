@@ -1,5 +1,6 @@
-package org.phuongnq.analyzer.dto;
+package org.phuongnq.analyzer.dto.aff;
 import com.opencsv.bean.CsvIgnore;
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
@@ -22,11 +23,15 @@ public class AdsDto {
     };
 
     @CsvIgnore
-    private String id;
+    private Long id;
+
+    @CsvIgnore
+    private Long sId;
+
     private String campaignName;                     // Tên chiến dịch
-    private String adGroupName;                      // Tên nhóm quảng cáo
+    private String adGroupName;
     private String date;                          // Ngày
-    private String adName;                           // Tên quảng cáo
+    private String adName;
     private String campaignId;                           // Tên quảng cáo
     private String deliveryStatus;                   // Trạng thái phân phối
     private String deliveryLevel;                    // Cấp độ phân phối
@@ -36,15 +41,5 @@ public class AdsDto {
     private String attributionSetting;               // Cài đặt ghi nhận
     private String resultType;                       // Loại kết quả
     private Integer results;                         // Kết quả (numeric)
-    private String amountSpent;                  // Số tiền đã chi tiêu (VND)
-
-    public void generateIdIfAbsent() {
-        if (this.id == null || this.id.isEmpty()) {
-            this.id = generateId();
-        }
-    }
-
-    public String generateId() {
-        return date+campaignId;
-    }
+    private BigDecimal amountSpent;                  // Số tiền đã chi tiêu (VND)
 }

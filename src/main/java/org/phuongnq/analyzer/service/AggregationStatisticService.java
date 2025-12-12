@@ -11,9 +11,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.phuongnq.analyzer.query.AggregationQuery;
+import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.model.AggregationByDateResult;
-import org.phuongnq.analyzer.query.model.AggregationResult;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.CampaignEfficiency;
 import org.phuongnq.analyzer.query.model.OrderDay;
@@ -24,26 +23,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AggregationStatisticService {
 
-    private final AggregationQuery aggregationQuery;
+    private final AffQuery affQuery;
+    private final UserService service;
 
     public List<CampaignEfficiency> getMarketingEfficiency(LocalDate fromDate, LocalDate toDate) {
-        return aggregationQuery.getMarketingEfficiency("" , fromDate, toDate);
-    }
-
-    public AggregationResult getAggregationStatistics(LocalDate fromDate, LocalDate toDate) {
-        // return result object
-        log.info("Fetching aggregation statistics from {} to {}", fromDate, toDate);
-        AggregationResult result = new AggregationResult();
-        result.setHourlyStats(aggregationQuery.queryAggregateOrderByHourly(fromDate, toDate));
-        result.setProductStats(aggregationQuery.queryAggregateProductCategoryByHourly(fromDate, toDate));
-        return result;
+        Long sid = service.getCurrentShopId();
+        return List.of();
     }
 
     public List<AggregationByDateResult> getCompareAggregationStatistics(LocalDate fromDate, LocalDate toDate) {
         // return result object
         log.info("Fetching aggregation statistics from {} to {}", fromDate, toDate);
-        List<CampDay> campByDay = aggregationQuery.queryCampByDay(fromDate, toDate);
-        List<OrderDay> orderByDay = aggregationQuery.queryOrderByDay(fromDate, toDate);
+        Long sid = service.getCurrentShopId();
+
+        List<CampDay> campByDay = affQuery.queryCampByDay(sid, null, fromDate, toDate);
+        List<OrderDay> orderByDay = affQuery.queryOrderByDay(sid, null, fromDate, toDate);
 
         Set<String> campNames = campByDay.stream()
             .map(CampDay::getName)
@@ -80,6 +74,7 @@ public class AggregationStatisticService {
 
             CampaignEfficiency otherCompare = new CampaignEfficiency();
             otherCompare.setName("Other");
+            otherCompare.setDate(date);
 
             int otherResults = 0;
             int otherOrders = 0;
@@ -136,6 +131,7 @@ public class AggregationStatisticService {
 
     private static CampaignEfficiency getCampaignEfficiency(CampDay campDay, OrderDay orderDay) {
         CampaignEfficiency campaignEfficiency = new CampaignEfficiency();
+        campaignEfficiency.setDate(campDay.getDate());
         campaignEfficiency.setName(campDay.getName());
         campaignEfficiency.setClicks(campDay.getResults());
         campaignEfficiency.setSpent(campDay.getSpent());

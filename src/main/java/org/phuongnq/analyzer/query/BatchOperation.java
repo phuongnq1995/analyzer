@@ -10,11 +10,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.phuongnq.analyzer.dto.AdsDto;
-import org.phuongnq.analyzer.dto.AffiliateOrderDto;
-import org.phuongnq.analyzer.dto.ClickDto;
+import org.phuongnq.analyzer.dto.aff.AdsDto;
+import org.phuongnq.analyzer.dto.aff.OrderDto;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,58 +24,25 @@ import org.springframework.transaction.annotation.Transactional;
 public class BatchOperation {
 
     private final JdbcTemplate jdbcTemplate;
+    private final JdbcClient client;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void batchInsertOrUpdateCLicks(List<ClickDto> entities) {
-        String insertSql = """
-            INSERT INTO click (id, click_time, area_zone, sub_ids, channel) VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (id) DO UPDATE SET
-                click_time = EXCLUDED.click_time,
-                area_zone = EXCLUDED.area_zone,
-                sub_ids = EXCLUDED.sub_ids,
-                channel = EXCLUDED.channel
-        """;
-        // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
-
-        jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ClickDto entity = entities.get(i);
-                ps.setString(1, entity.getId());
-                ps.setTimestamp(2,  Timestamp.valueOf(entity.getClickTime()));
-                ps.setString(3, entity.getAreaZone());
-                ps.setString(4, entity.getSubIds());
-                ps.setString(5, entity.getChannel());
-            }
-
-            @Override
-            public int getBatchSize() {
-                return entities.size();
-            }
-        });
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void batchInsertOrUpdateAds(List<AdsDto> entities) {
+    public void batchInsertOrUpdateAds(Long sid, List<AdsDto> entities) {
         String insertSql = String.format("""
-            INSERT INTO ads (id, %s) VALUES (?, %s)
-            ON CONFLICT (id) DO UPDATE SET %s
+            INSERT INTO ads (sId, %s) VALUES (?, %s)
         """,
             String.join(", ", AdsDto.FIELDS),
             String.join(", ", "?".repeat(AdsDto.FIELDS.length).split("")),
-            generatePlaceholders(AdsDto.FIELDS, "id")
+            generatePlaceholders(AdsDto.FIELDS)
         );
 
-        System.out.println(insertSql);
         // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
 
         jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 AdsDto entity = entities.get(i);
-                entity.generateIdIfAbsent();
-                ps.setString(1,  entity.getId());
-
+                ps.setLong(1,  sid);
                 ps.setString(2,  entity.getCampaignName());
                 ps.setString(3,  entity.getAdGroupName());
                 setDateFromString(ps, 4, entity.getDate());
@@ -89,7 +56,7 @@ public class BatchOperation {
                 ps.setString(12, entity.getAttributionSetting());
                 ps.setString(13, entity.getResultType());
                 setIntFromInteger(ps,  14, entity.getResults());
-                setBigDecimalFromString(ps, 15, entity.getAmountSpent());
+                setBigDecimal(ps, 15, entity.getAmountSpent());
             }
 
             @Override
@@ -100,70 +67,69 @@ public class BatchOperation {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void batchInsertOrUpdateOrders(List<AffiliateOrderDto> entities) {
+    public void batchInsertOrUpdateOrders(Long sid, List<OrderDto> entities) {
         String insertSql = String.format("""
-            INSERT INTO affiliate_orders (%s) VALUES (%s)
-            ON CONFLICT (orderId) DO UPDATE SET %s
+            INSERT INTO orders (sId, %s) VALUES (?, %s)
         """,
-            String.join(", ", AffiliateOrderDto.FIELDS),
-            String.join(", ", "?".repeat(AffiliateOrderDto.FIELDS.length).split("")),
-            generatePlaceholders(AffiliateOrderDto.FIELDS, "orderId")
+            String.join(", ", OrderDto.FIELDS),
+            String.join(", ", "?".repeat(OrderDto.FIELDS.length).split("")),
+            generatePlaceholders(OrderDto.FIELDS)
         );
 
-        System.out.println(insertSql);
         // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
         jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
 
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                AffiliateOrderDto entity = entities.get(i);
-                ps.setString(1, entity.getOrderId()+entity.getItemId());
-                ps.setString(2, entity.getOrderStatus());
-                ps.setString(3, entity.getCheckoutId());
-                setTimestampFromString(ps, 4, entity.getOrderTime());
-                setTimestampFromString(ps, 5, entity.getCompletionTime());
-                setTimestampFromString(ps, 6, entity.getClickTime());
-                ps.setString(7, entity.getShopName());
-                ps.setString(8, entity.getShopId());
-                ps.setString(9, entity.getShopType());
-                ps.setString(10, entity.getItemId());
-                ps.setString(11, entity.getItemName());
-                ps.setString(12, entity.getModelId());
-                ps.setString(13, entity.getProductType());
-                ps.setString(14, entity.getPromotionId());
-                ps.setString(15, entity.getGlobalCatL1());
-                ps.setString(16, entity.getGlobalCatL2());
-                ps.setString(17, entity.getGlobalCatL3());
-                ps.setBigDecimal(18, entity.getSalePrice());
-                setIntFromInteger(ps, 19, entity.getQuantity());
-                ps.setString(20, entity.getAffiliateCommissionType());
-                ps.setString(21, entity.getCampaignPartner());
-                ps.setBigDecimal(22, entity.getOrderValue());
-                ps.setBigDecimal(23, entity.getRefundAmount());
-                setBigDecimalFromString(ps, 24, entity.getCommissionRateOnProduct()); // DECIMAL(10,2) <- DTO String
-                setBigDecimalFromString(ps, 25, entity.getCommissionOnProduct()); // DECIMAL(18,2) <- DTO String
-                setBigDecimalFromString(ps, 26, entity.getSellerCommissionRateOnProduct()); // DECIMAL(10,2)
-                setBigDecimalFromString(ps, 27, entity.getXtraCommissionOnProduct()); // DECIMAL(18,2)
-                setBigDecimalFromString(ps, 28, entity.getTotalProductCommission()); // DECIMAL(18,2)
-                setBigDecimalFromString(ps, 29, entity.getCommissionFromOrder()); // DECIMAL(18,2)
-                setBigDecimalFromString(ps, 30, entity.getCommissionFromSeller()); // DECIMAL(18,2)
-                setBigDecimalFromString(ps, 31, entity.getTotalOrderCommission()); // DECIMAL(18,2)
-                ps.setString(32, entity.getMcnName());
-                ps.setString(33, entity.getMcnContractCode());
-                setBigDecimalFromString(ps, 34, entity.getMcnManagementRate()); // DECIMAL(10,2)
-                setBigDecimalFromString(ps, 35, entity.getMcnManagementFee()); // DECIMAL(18,2)
-                setBigDecimalFromString(ps, 36, entity.getAgreedAffiliateMarketingCommissionRate()); // DECIMAL(10,2)
-                setBigDecimalFromString(ps, 37, entity.getNetAffiliateMarketingCommission()); // DECIMAL(18,2)
-                ps.setString(38, entity.getLinkedProductStatus());
-                ps.setString(39, entity.getProductNotes());
-                ps.setString(40, entity.getAttributeType());
-                ps.setString(41, entity.getBuyerStatus());
-                ps.setString(42, entity.getSubId1());
-                ps.setString(43, entity.getSubId2());
-                ps.setString(44, entity.getSubId3());
-                ps.setString(45, entity.getSubId4());
-                ps.setString(46, entity.getSubId5());
-                ps.setString(47, entity.getChannel());
+                OrderDto entity = entities.get(i);
+                ps.setLong(1, sid);
+                ps.setString(2, entity.getOrderId());
+                ps.setString(3, entity.getOrderStatus());
+                ps.setString(4, entity.getCheckoutId());
+                setTimestampFromString(ps, 5, entity.getOrderTime());
+                setTimestampFromString(ps, 6, entity.getCompletionTime());
+                setTimestampFromString(ps, 7, entity.getClickTime());
+                ps.setString(8, entity.getShopName());
+                ps.setString(9, entity.getShopId());
+                ps.setString(10, entity.getShopType());
+                ps.setString(11, entity.getItemId());
+                ps.setString(12, entity.getItemName());
+                ps.setString(13, entity.getModelId());
+                ps.setString(14, entity.getProductType());
+                ps.setString(15, entity.getPromotionId());
+                ps.setString(16, entity.getGlobalCatL1());
+                ps.setString(17, entity.getGlobalCatL2());
+                ps.setString(18, entity.getGlobalCatL3());
+                ps.setBigDecimal(19, entity.getSalePrice());
+                setIntFromInteger(ps, 20, entity.getQuantity());
+                ps.setString(21, entity.getAffiliateCommissionType());
+                ps.setString(22, entity.getCampaignPartner());
+                ps.setBigDecimal(23, entity.getOrderValue());
+                ps.setBigDecimal(24, entity.getRefundAmount());
+                setBigDecimalFromString(ps, 25, entity.getCommissionRateOnProduct());
+                setBigDecimalFromString(ps, 26, entity.getCommissionOnProduct());
+                setBigDecimalFromString(ps, 27, entity.getSellerCommissionRateOnProduct());
+                setBigDecimalFromString(ps, 28, entity.getXtraCommissionOnProduct());
+                setBigDecimalFromString(ps, 29, entity.getTotalProductCommission());
+                setBigDecimalFromString(ps, 30, entity.getCommissionFromOrder());
+                setBigDecimalFromString(ps, 31, entity.getCommissionFromSeller());
+                setBigDecimal(ps, 32, entity.getTotalOrderCommission());
+                ps.setString(33, entity.getMcnName());
+                ps.setString(34, entity.getMcnContractCode());
+                setBigDecimalFromString(ps, 35, entity.getMcnManagementRate());
+                setBigDecimalFromString(ps, 36, entity.getMcnManagementFee());
+                setBigDecimalFromString(ps, 37, entity.getAgreedAffiliateMarketingCommissionRate());
+                setBigDecimal(ps, 38, entity.getNetAffiliateMarketingCommission());
+                ps.setString(39, entity.getLinkedProductStatus());
+                ps.setString(40, entity.getProductNotes());
+                ps.setString(41, entity.getAttributeType());
+                ps.setString(42, entity.getBuyerStatus());
+                ps.setString(43, entity.getSubId1());
+                ps.setString(44, entity.getSubId2());
+                ps.setString(45, entity.getSubId3());
+                ps.setString(46, entity.getSubId4());
+                ps.setString(47, entity.getSubId5());
+                ps.setString(48, entity.getChannel());
             }
 
             @Override
@@ -173,9 +139,8 @@ public class BatchOperation {
         });
     }
 
-    private String generatePlaceholders(String[] fields, String identifierField) {
+    private String generatePlaceholders(String[] fields) {
         return Arrays.stream(fields)
-            .filter(field -> !field.equals(identifierField))
             .map(field -> field + " = EXCLUDED." + field)
             .collect(Collectors.joining(", "));
     }
@@ -226,6 +191,14 @@ public class BatchOperation {
             ps.setNull(idx, Types.INTEGER);
         } else {
             ps.setInt(idx, value);
+        }
+    }
+
+    private static void setBigDecimal(PreparedStatement ps, int idx, BigDecimal bd) throws SQLException {
+        if (bd == null) {
+            ps.setNull(idx, Types.NUMERIC);
+        } else {
+            ps.setBigDecimal(idx, bd);
         }
     }
 
