@@ -1,11 +1,14 @@
-# Use the Eclipse Temurin JDK 21 image as the base
-FROM eclipse-temurin:21-jdk
-
-# Set the working directory inside the container
+# Stage 1: Build the application with Maven and Temurin JDK 21
+FROM maven:3.9.8-eclipse-temurin-21 AS build
 WORKDIR /app
+COPY src /app/src
+COPY pom.xml /app
+RUN mvn clean install -U
 
-# Copy your application's JAR file into the container
-COPY target/analyzer-0.0.1-SNAPSHOT.jar app.jar
-
-# Command to run the application when the container starts
+# Stage 2: Create the final, lightweight runtime image with Temurin JRE 21
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+# Copy the packaged JAR file from the build stage
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
