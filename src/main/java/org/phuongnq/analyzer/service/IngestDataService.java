@@ -10,6 +10,7 @@ import org.phuongnq.analyzer.dto.aff.OrderDto;
 import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.BatchOperation;
+import org.phuongnq.analyzer.query.model.AggregationByDateResult;
 import org.phuongnq.analyzer.utils.CSVHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +25,18 @@ public class IngestDataService {
     private final BatchOperation batchOperation;
     private final AffQuery affQuery;
     private final UserService service;
+    private final AggregationStatisticService statisticService;
 
     @Transactional
     public void ingestOrders(MultipartFile file, DateRange input) {
         Long sid = service.getCurrentShopId();
-        List<OrderDto> orders = csvHelper.readOrderFromCsv(file);
         int count = affQuery.cleanOrdersData(sid, input);
+        List<OrderDto> orders = csvHelper.readOrderFromCsv(file);
         log.info("Deleted {} rows of orders from {} to {}", count, input.getFromDate(), input.getToDate());
         batchOperation.batchInsertOrUpdateOrders(sid, orders);
+        List<AggregationByDateResult> statistics = statisticService.getCompareAggregationStatistics(
+            input.getFromDate(), input.getToDate());
+
     }
 
     @Transactional

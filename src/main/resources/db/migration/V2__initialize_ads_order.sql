@@ -74,8 +74,28 @@ CREATE TABLE ads (
     amountSpent         DECIMAL(18,2)
 );
 
-CREATE INDEX idx_orders_sid_clickTime ON orders (sId, clickTime);
-CREATE INDEX idx_ads_sid_date ON ads (sId, date);
+CREATE INDEX idx_orders_sid_clickTime ON orders (sId, clickTime, name);
+CREATE INDEX idx_ads_sid_date ON ads (sId, date, name);
+
+CREATE TABLE recommendation (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+    status              INT,
+    requestTime         TIMESTAMP WITHOUT TIME ZONE,
+    createdAt           TIMESTAMP WITHOUT TIME ZONE,
+    finishedTime        TIMESTAMP WITHOUT TIME ZONE,
+    content             VARCHAR(2000)
+);
+
+CREATE TABLE recommendation_campaign (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recommendation_id   BIGINT NOT NULL REFERENCES recommendation(id) ON DELETE CASCADE,
+    campaignName        VARCHAR(255),
+    efficiencyLevel     INT,
+    action              VARCHAR(255),
+    advise              VARCHAR(500)
+);
+
 
 CREATE VIEW campaignDay AS
 SELECT (date::date) AS dt, lower(campaignName), sid

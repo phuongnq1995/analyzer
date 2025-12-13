@@ -87,7 +87,7 @@ public class AggregationStatisticService {
                 } else {
                     OrderDay orderDay = orderDayNameMap.remove(campDay.getName());
 
-                    CampaignEfficiency campaignEfficiency = getCampaignEfficiency(campDay, orderDay);
+                    CampaignEfficiency campaignEfficiency = new CampaignEfficiency(campDay, orderDay);
 
                     // Add mapped campaign
                     campaignEfficiencies.add(campaignEfficiency);
@@ -116,6 +116,7 @@ public class AggregationStatisticService {
                 otherCompare.setCommission(BigDecimal.ZERO);
             }
 
+            otherCompare.generateData();
             // Add other compare
             campaignEfficiencies.add(otherCompare);
 
@@ -127,21 +128,5 @@ public class AggregationStatisticService {
         }
 
         return aggregationResults;
-    }
-
-    private static CampaignEfficiency getCampaignEfficiency(CampDay campDay, OrderDay orderDay) {
-        CampaignEfficiency campaignEfficiency = new CampaignEfficiency();
-        campaignEfficiency.setDate(campDay.getDate());
-        campaignEfficiency.setName(campDay.getName());
-        campaignEfficiency.setClicks(campDay.getResults());
-        campaignEfficiency.setSpent(campDay.getSpent());
-        if (orderDay != null) {
-            campaignEfficiency.setOrders(orderDay.getOrders());
-            campaignEfficiency.setCommission(orderDay.getCommission());
-        } else {
-            campaignEfficiency.setOrders(0);
-            campaignEfficiency.setCommission(BigDecimal.ZERO);
-        }
-        return campaignEfficiency;
     }
 }

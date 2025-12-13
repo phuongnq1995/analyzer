@@ -5,9 +5,11 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.phuongnq.analyzer.dto.aff.RecommendationCampaign;
 import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.mapper.CampDayMapper;
 import org.phuongnq.analyzer.query.mapper.OrderDayMapper;
+import org.phuongnq.analyzer.query.mapper.RecommendationCampaignMapper;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.CampaignDateEfficiency;
 import org.phuongnq.analyzer.query.model.OrderDay;
@@ -37,31 +39,6 @@ public class AffQuery {
                 CampDay camp = campDays.getOrDefault(date, new CampDay());
                 return new CampaignDateEfficiency(date, order, camp);
             }).collect(Collectors.toList());
-    }
-
-    public Long queryOrderLag(LocalDate startDate, LocalDate endDate, String name, int days) {
-        return jdbcClient.sql("""
-                select sum(orders) as number
-                FROM
-                (
-                SELECT (clickTime::date) AS clickDate,
-                    (orderTime::date) AS orderDate,
-                    subId1 as name,
-                    COUNT(DISTINCT orderId) AS orders,
-                    COALESCE(SUM(netAffiliateMarketingCommission),0) AS commission
-                FROM orders
-                WHERE orderstatus != 'Đã hủy'
-                GROUP BY clickDate, orderDate, name
-                HAVING subId1 = ?
-                AND (clickTime::date) >= ? (clickTime::date) <= ?
-                ORDER BY orderDate, clickDate, name
-                )
-                WHERE clickDate + INTERVAL '%s day' = orderDate
-                """.formatted(days))
-            .param(name)
-            .param(startDate.atStartOfDay())
-            .param(endDate.plusDays(1).atStartOfDay())
-            .query((rs, rowNum) -> rs.getLong(0)).single();
     }
 
     public List<OrderDay> queryOrderByDay(Long sid, @Nullable String campName, LocalDate fromDate, LocalDate toDate) {
@@ -146,6 +123,34 @@ public class AffQuery {
             .param("from", input.getFromDate())
             .param("to", input.getToDate().plusDays(1))
             .update();
+    }
+
+    public Optional<Long> getLatestRecommendation(Long sId) {
+        String sql = """
+            SELECT id
+            FROM recommendation
+            WHERE sId = :sId
+            ORDER BY finishedTime DESC
+            FETCH FIRST 1 ROW ONLY
+            """;
+
+        return jdbcClient.sql(sql)
+            .param("sId", sId)
+            .query(Long.class)
+            .optional();
+    }
+
+    public List<RecommendationCampaign> getRecommendationCampaigns(Long recommendationId) {
+        String sql = """
+            SELECT id, campaignName, efficiencyLevel, action, advise
+            FROM recommendation_campaign
+            WHERE recommendationId = :recommendationId
+            """;
+
+        return jdbcClient.sql(sql)
+            .param("recommendationId", recommendationId)
+            .query(new RecommendationCampaignMapper())
+            .list();
     }
 
 }

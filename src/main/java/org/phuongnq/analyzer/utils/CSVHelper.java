@@ -1,7 +1,9 @@
 package org.phuongnq.analyzer.utils;
 
+import com.opencsv.CSVReader;
 import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
 import org.phuongnq.analyzer.dto.aff.AdsDto;
 import org.phuongnq.analyzer.dto.aff.OrderDto;
 import org.springframework.stereotype.Component;
@@ -47,23 +49,18 @@ public class CSVHelper {
             throw new RuntimeException("File type is not CSV! Found: " + file.getContentType());
         }
 
-        ColumnPositionMappingStrategy<AdsDto> strategy = new ColumnPositionMappingStrategy<>();
-        strategy.setType(AdsDto.class);
-        strategy.setColumnMapping(AdsDto.FIELDS);
+        try (CSVReader reader = new CSVReader(new BufferedReader(new InputStreamReader(file.getInputStream())))) {
+            HeaderColumnNameTranslateMappingStrategy<AdsDto> strategy = new HeaderColumnNameTranslateMappingStrategy<>();
+            strategy.setType(AdsDto.class);
+            strategy.setColumnMapping(AdsDto.FIELD_MAP);
 
-        try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-
-            List<AdsDto> rows = new CsvToBeanBuilder<AdsDto>(reader)
-                .withSkipLines(1)
+            return new CsvToBeanBuilder<AdsDto>(reader)
                 .withMappingStrategy(strategy)
+                .withIgnoreLeadingWhiteSpace(true)
                 .build()
                 .parse();
-
-            return rows;
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse CSV file: " + e.getMessage());
         }
     }
-
 }

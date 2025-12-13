@@ -24,9 +24,11 @@ public class User {
     private String password;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
 
     @Column(name = "created_at", nullable = false)
+    @Builder.Default
     private Instant createdAt = Instant.now();
 
     @OneToMany(mappedBy = "user")

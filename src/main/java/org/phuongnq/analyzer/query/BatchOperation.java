@@ -66,7 +66,6 @@ public class BatchOperation {
         });
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void batchInsertOrUpdateOrders(Long sid, List<OrderDto> entities) {
         String insertSql = String.format("""
             INSERT INTO orders (sId, %s) VALUES (?, %s)

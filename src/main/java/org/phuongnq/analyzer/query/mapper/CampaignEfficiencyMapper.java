@@ -17,10 +17,7 @@ public class CampaignEfficiencyMapper implements RowMapper<CampaignEfficiency> {
         int orders = rs.getInt("orders");
         BigDecimal spent = rs.getBigDecimal("spent");
         BigDecimal commission = rs.getBigDecimal("commission");
-        float cpc = rs.getFloat("cpc");
-        BigDecimal conversionRate = rs.getBigDecimal("conversionRate");
-        BigDecimal revenue = rs.getBigDecimal("revenue");
 
-        return new CampaignEfficiency(date, name, clicks, orders, spent, commission, cpc, conversionRate, revenue);
+        return new CampaignEfficiency(date, name, clicks, orders, spent, commission);
     }
 }
