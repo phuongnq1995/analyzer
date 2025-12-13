@@ -2,8 +2,6 @@ package org.phuongnq.analyzer.query;
 
 import java.time.*;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.phuongnq.analyzer.dto.aff.RecommendationCampaign;
 import org.phuongnq.analyzer.dto.req.DateRange;
@@ -11,7 +9,6 @@ import org.phuongnq.analyzer.query.mapper.CampDayMapper;
 import org.phuongnq.analyzer.query.mapper.OrderDayMapper;
 import org.phuongnq.analyzer.query.mapper.RecommendationCampaignMapper;
 import org.phuongnq.analyzer.query.model.CampDay;
-import org.phuongnq.analyzer.query.model.CampaignDateEfficiency;
 import org.phuongnq.analyzer.query.model.OrderDay;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.lang.Nullable;
@@ -22,24 +19,6 @@ import org.springframework.stereotype.Repository;
 public class AffQuery {
 
     private final JdbcClient jdbcClient;
-
-    public List<CampaignDateEfficiency> getMarketingEfficiency(String name, LocalDate fromDate, LocalDate toDate) {
-        long sid = 2;
-
-        Map<LocalDate, OrderDay> orderDays = queryOrderByDay(sid, name, fromDate, toDate)
-            .stream()
-            .collect(Collectors.toMap(OrderDay::getDate, Function.identity()));
-        Map<LocalDate, CampDay> campDays = queryCampByDay(sid, name, fromDate, toDate)
-            .stream()
-            .collect(Collectors.toMap(CampDay::getDate, Function.identity()));
-
-        return fromDate.datesUntil(toDate)
-            .map(date -> {
-                OrderDay order = orderDays.getOrDefault(date, new OrderDay());
-                CampDay camp = campDays.getOrDefault(date, new CampDay());
-                return new CampaignDateEfficiency(date, order, camp);
-            }).collect(Collectors.toList());
-    }
 
     public List<OrderDay> queryOrderByDay(Long sid, @Nullable String campName, LocalDate fromDate, LocalDate toDate) {
         String sql = """
@@ -62,7 +41,7 @@ public class AffQuery {
         String campNameCondition = "";
 
         if (campName != null) {
-            campNameCondition = "AND name = :name";
+            campNameCondition = "AND subId1 = :name";
             params.put("name", campName);
         }
 
@@ -93,7 +72,7 @@ public class AffQuery {
         String campNameCondition = "";
 
         if (campName != null) {
-            campNameCondition = "AND name = :name";
+            campNameCondition = "AND campaignName = :name";
             params.put("name", campName);
         }
 

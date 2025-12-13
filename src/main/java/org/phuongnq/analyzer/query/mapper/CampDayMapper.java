@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import org.phuongnq.analyzer.query.model.CampDay;
-import org.phuongnq.analyzer.query.model.HourlyStat;
 import org.springframework.jdbc.core.RowMapper;
 
 public class CampDayMapper implements RowMapper<CampDay> {

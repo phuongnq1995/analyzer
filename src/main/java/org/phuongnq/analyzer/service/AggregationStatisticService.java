@@ -26,11 +26,6 @@ public class AggregationStatisticService {
     private final AffQuery affQuery;
     private final UserService service;
 
-    public List<CampaignEfficiency> getMarketingEfficiency(LocalDate fromDate, LocalDate toDate) {
-        Long sid = service.getCurrentShopId();
-        return List.of();
-    }
-
     public List<AggregationByDateResult> getCompareAggregationStatistics(LocalDate fromDate, LocalDate toDate) {
         // return result object
         log.info("Fetching aggregation statistics from {} to {}", fromDate, toDate);

@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.phuongnq.analyzer.query.model.AggregationByDateResult;
-import org.phuongnq.analyzer.query.model.CampaignEfficiency;
 import org.phuongnq.analyzer.service.AggregationStatisticService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,11 +25,5 @@ public class StatisticController {
             to = LocalDate.now();
         }
         return ResponseEntity.ok(service.getCompareAggregationStatistics(from, to));
-    }
-
-    @GetMapping("/compare")
-    public ResponseEntity<List<CampaignEfficiency>> compare(
-        @RequestParam(value = "from") LocalDate from, @RequestParam(value = "to") LocalDate to) {
-        return ResponseEntity.ok(service.getMarketingEfficiency(from, to));
     }
 }
