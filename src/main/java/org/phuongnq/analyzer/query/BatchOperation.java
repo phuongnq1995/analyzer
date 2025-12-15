@@ -6,12 +6,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.phuongnq.analyzer.dto.aff.AdsDto;
 import org.phuongnq.analyzer.dto.aff.OrderDto;
+import org.phuongnq.analyzer.query.model.ConversionPacingCurve;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -137,6 +139,42 @@ public class BatchOperation {
             }
         });
     }
+    public void batchInsert(List<ConversionPacingCurve> entities) {
+        String insertSql = String.format("""
+            INSERT INTO conversion_pacing_curve (sId, name, date, delayDate, revenue, percentage) VALUES (?, ?, ?, ?, ?, ?)
+        """);
+
+        // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
+
+        jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ConversionPacingCurve entity = entities.get(i);
+                ps.setLong(1,  entity.getSId());
+                ps.setString(2,  entity.getName());
+                setDate(ps, 3,  entity.getDate());
+                ps.setInt(4, entity.getDelayDate());
+                setBigDecimal(ps, 5, entity.getRevenue());
+                setBigDecimal(ps, 6, entity.getPercentage());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return entities.size();
+            }
+        });
+    }
+
+    public int deleteConversionPacingCurve(Long sid, LocalDate from, LocalDate to) {
+        return client.sql("""
+                DELETE from conversion_pacing_curve
+                WHERE sId = :sId AND date >= :from AND date < :to
+            """)
+            .param("sId", sid)
+            .param("from", from.atStartOfDay())
+            .param("to", to.plusDays(1).atStartOfDay())
+            .update();
+    }
 
     private String generatePlaceholders(String[] fields) {
         return Arrays.stream(fields)
@@ -159,6 +197,18 @@ public class BatchOperation {
 
     private static void setDateFromString(PreparedStatement ps, int idx, String value) throws SQLException {
         if (value == null || value.isBlank()) {
+            ps.setNull(idx, Types.DATE);
+            return;
+        }
+        try {
+            ps.setDate(idx, Date.valueOf(value));
+        } catch (IllegalArgumentException ex) {
+            ps.setNull(idx, Types.DATE);
+        }
+    }
+
+    private static void setDate(PreparedStatement ps, int idx, LocalDate value) throws SQLException {
+        if (value == null) {
             ps.setNull(idx, Types.DATE);
             return;
         }

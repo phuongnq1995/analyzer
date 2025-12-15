@@ -7,9 +7,11 @@ import org.phuongnq.analyzer.dto.aff.RecommendationCampaign;
 import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.mapper.CampDayMapper;
 import org.phuongnq.analyzer.query.mapper.OrderDayMapper;
+import org.phuongnq.analyzer.query.mapper.OrderDelayMapper;
 import org.phuongnq.analyzer.query.mapper.RecommendationCampaignMapper;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.OrderDay;
+import org.phuongnq.analyzer.query.model.OrderDelay;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
@@ -72,7 +74,7 @@ public class AffQuery {
         String campNameCondition = "";
 
         if (campName != null) {
-            campNameCondition = "AND campaignName = :name";
+            campNameCondition = "AND lower(campaignName) = :name";
             params.put("name", campName);
         }
 
@@ -132,4 +134,32 @@ public class AffQuery {
             .list();
     }
 
+    public List<OrderDelay> getDistributeOrder(Long sId, LocalDate fromDate, LocalDate toDate) {
+        String sql = """
+                SELECT
+                 subId1 AS name,
+                 (clickTime::date) AS clickDate,
+                 (orderTime::date) AS orderDate,
+                 COUNT(DISTINCT orderId) AS delayedOrders,
+                 COALESCE(SUM(netAffiliateMarketingCommission),0) AS delayedRevenue,
+                 (orderTime::date) - (clickTime::date) AS delayDays
+               FROM orders
+               WHERE orderStatus != 'Đã hủy' AND sId = :sId
+                AND (clickTime::date) >= :from AND (clickTime::date) < :to
+               GROUP BY
+                 clickDate, orderDate, subId1
+               ORDER BY orderDate, clickDate
+               """;
+
+        Map<String, Object> params = new HashMap<>() {{
+            put("sId", sId);
+            put("from", fromDate.atStartOfDay());
+            put("to", toDate.plusDays(1).atStartOfDay());
+        }};
+
+        return jdbcClient.sql(sql)
+            .params(params)
+            .query(new OrderDelayMapper())
+            .list();
+    }
 }

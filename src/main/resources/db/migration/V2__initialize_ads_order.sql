@@ -77,6 +77,16 @@ CREATE TABLE ads (
 CREATE INDEX idx_orders_sid_clickTime ON orders (sId, clickTime, name);
 CREATE INDEX idx_ads_sid_date ON ads (sId, date, name);
 
+CREATE TABLE conversion_pacing_curve (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+    name                VARCHAR(255),
+    date                DATE,
+    delayDate           INT,
+    revenue             DECIMAL(18,2),
+    percentage          DECIMAL(10,4)
+);
+
 CREATE TABLE recommendation (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,

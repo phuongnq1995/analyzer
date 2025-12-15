@@ -27,23 +27,6 @@ public class AdsDto {
         "amountSpent"
     };
 
-    public static final Map<String, String> FIELD_MAP = new HashMap<>() {{
-        put("Tên chiến dịch", "campaignName");
-        put("\ufeffTên chiến dịch", "campaignName");
-        put("Tên nhóm quảng cáo", "adGroupName");
-        put("Ngày", "date");
-        put("Tên quảng cáo", "adName");
-        put("Trạng thái phân phối", "deliveryStatus");
-        put("Cấp độ phân phối", "deliveryLevel");
-        put("Người tiếp cận", "reach");
-        put("Lượt hiển thị", "impressions");
-        put("Tần suất", "frequency");
-        put("Cài đặt ghi nhận", "attributionSetting");
-        put("Loại kết quả", "resultType");
-        put("Kết quả", "results");
-        put("Số tiền đã chi tiêu (VND)", "amountSpent");
-    }};
-
     @CsvIgnore
     private Long id;
 
