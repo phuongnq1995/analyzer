@@ -82,7 +82,7 @@ CREATE TABLE conversion_pacing_curve (
     sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
     name                VARCHAR(255),
     date                DATE,
-    delayDate           INT,
+    delayDays           INT,
     revenue             DECIMAL(18,2),
     percentage          DECIMAL(10,4)
 );
@@ -105,6 +105,24 @@ CREATE TABLE recommendation_campaign (
     action              VARCHAR(255),
     advise              VARCHAR(500)
 );
+
+CREATE TABLE estimate_sales (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+    campaignName        VARCHAR(255),
+    requestTime         TIMESTAMP WITHOUT TIME ZONE,
+    createdAt           TIMESTAMP WITHOUT TIME ZONE,
+    finishedTime        TIMESTAMP WITHOUT TIME ZONE,
+    content             VARCHAR(2000)
+);
+
+
+
+
+
+
+
+
 
 
 CREATE VIEW campaignDay AS

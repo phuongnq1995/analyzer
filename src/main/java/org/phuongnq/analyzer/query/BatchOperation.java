@@ -29,7 +29,7 @@ public class BatchOperation {
     private final JdbcClient client;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void batchInsertOrUpdateAds(Long sid, List<AdsDto> entities) {
+    public int batchInsertOrUpdateAds(Long sid, List<AdsDto> entities) {
         String insertSql = String.format("""
             INSERT INTO ads (sId, %s) VALUES (?, %s)
         """,
@@ -40,7 +40,7 @@ public class BatchOperation {
 
         // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
 
-        jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+        return jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 AdsDto entity = entities.get(i);
@@ -65,10 +65,10 @@ public class BatchOperation {
             public int getBatchSize() {
                 return entities.size();
             }
-        });
+        }).length;
     }
 
-    public void batchInsertOrUpdateOrders(Long sid, List<OrderDto> entities) {
+    public int batchInsertOrUpdateOrders(Long sid, List<OrderDto> entities) {
         String insertSql = String.format("""
             INSERT INTO orders (sId, %s) VALUES (?, %s)
         """,
@@ -78,7 +78,7 @@ public class BatchOperation {
         );
 
         // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
-        jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+        return jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
 
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -137,11 +137,11 @@ public class BatchOperation {
             public int getBatchSize() {
                 return entities.size();
             }
-        });
+        }).length;
     }
     public void batchInsert(List<ConversionPacingCurve> entities) {
         String insertSql = String.format("""
-            INSERT INTO conversion_pacing_curve (sId, name, date, delayDate, revenue, percentage) VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO conversion_pacing_curve (sId, name, date, delayDays, revenue, percentage) VALUES (?, ?, ?, ?, ?, ?)
         """);
 
         // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.

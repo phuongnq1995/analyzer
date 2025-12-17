@@ -40,7 +40,8 @@ public class IngestDataService {
         int count = affQuery.cleanOrdersData(sid, input);
         List<OrderDto> orders = csvHelper.readOrderFromCsv(file);
         log.info("Deleted {} rows of orders from {} to {}", count, input.getFromDate(), input.getToDate());
-        batchOperation.batchInsertOrUpdateOrders(sid, orders);
+        int insertCount = batchOperation.batchInsertOrUpdateOrders(sid, orders);
+        log.info("Inserted {} rows of orders from {} to {}", insertCount, input.getFromDate(), input.getToDate());
 
         aggregationBatchService.aggregateAfterIngestOrders(sid, input);
     }
@@ -52,7 +53,9 @@ public class IngestDataService {
         int count = affQuery.cleanAdsData(sid, input);
         log.info("Deleted {} rows of ads from {} to {}", count, input.getFromDate(), input.getToDate());
 
-        batchOperation.batchInsertOrUpdateAds(sid, ads);
+        int insertCount = batchOperation.batchInsertOrUpdateAds(sid, ads);
+
+        log.info("Inserted {} rows of orders from {} to {}", insertCount, input.getFromDate(), input.getToDate());
     }
 
     private String sumBigDecimal(String bd1, String bd2) {
