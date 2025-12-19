@@ -31,7 +31,7 @@ public class AggregationBatchService {
     @Async
     @Transactional(propagation = REQUIRES_NEW)
     public void aggregateAfterIngestOrders(Long sid, DateRange input) {
-        LocalDate from = input.getFromDate();;
+        LocalDate from = input.getFromDate();
         LocalDate to = input.getToDate();
 
         batchOperation.deleteConversionPacingCurve(sid, from, to);

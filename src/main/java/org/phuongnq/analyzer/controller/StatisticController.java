@@ -20,10 +20,14 @@ public class StatisticController {
 
     @GetMapping
     public ResponseEntity<List<AggregationByDateResult>> get(
-        @RequestParam(value = "from", required = false) LocalDate from, @RequestParam(value = "to", required = false) LocalDate to) {
+        @RequestParam(value = "from", required = false) LocalDate from,
+        @RequestParam(value = "to", required = false) LocalDate to,
+        @RequestParam(value = "type", defaultValue = "clickTime") String type) {
+
         if (to == null) {
             to = LocalDate.now();
         }
-        return ResponseEntity.ok(service.getCompareAggregationStatistics(from, to));
+
+        return ResponseEntity.ok(service.getCompareAggregationStatistics(from, to, type));
     }
 }

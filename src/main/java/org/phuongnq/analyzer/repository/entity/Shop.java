@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,6 +31,10 @@ public class Shop {
 
     @Column
     private String description;
+
+    private BigDecimal marketingFee;
+
+    private BigDecimal salesTax;
 
     @ManyToOne(fetch = FetchType.EAGER)
     private User user;

@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CampaignEfficiency {
-    public LocalDate date;
+    private LocalDate date;
+    private BigDecimal netProfit;
 
     public CampaignEfficiency(LocalDate date, String name, int clicks, int orders, BigDecimal spent,
         BigDecimal commission) {

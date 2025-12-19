@@ -20,4 +20,8 @@ public final class MathUtils {
     public static boolean isZero(BigDecimal value) {
         return value == null || value.compareTo(BigDecimal.ZERO) == 0;
     }
+
+    public static boolean isPositive(BigDecimal value) {
+        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
+    }
 }

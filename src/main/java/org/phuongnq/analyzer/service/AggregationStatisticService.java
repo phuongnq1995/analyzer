@@ -16,6 +16,8 @@ import org.phuongnq.analyzer.query.model.AggregationByDateResult;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.CampaignEfficiency;
 import org.phuongnq.analyzer.query.model.OrderDay;
+import org.phuongnq.analyzer.repository.entity.Shop;
+import org.phuongnq.analyzer.utils.MathUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,13 +28,15 @@ public class AggregationStatisticService {
     private final AffQuery affQuery;
     private final UserService service;
 
-    public List<AggregationByDateResult> getCompareAggregationStatistics(LocalDate fromDate, LocalDate toDate) {
+    public List<AggregationByDateResult> getCompareAggregationStatistics(LocalDate fromDate, LocalDate toDate,
+        String type) {
         // return result object
         log.info("Fetching aggregation statistics from {} to {}", fromDate, toDate);
-        Long sid = service.getCurrentShopId();
+        Shop currentShop = service.getCurrentShop();
+        Long sid = currentShop.getId();
 
-        List<CampDay> campByDay = affQuery.queryCampByDay(sid, null, fromDate, toDate);
-        List<OrderDay> orderByDay = affQuery.queryOrderByDay(sid, null, fromDate, toDate);
+        List<CampDay> campByDay = affQuery.queryCampByDay(sid, fromDate, toDate);
+        List<OrderDay> orderByDay = affQuery.queryOrderByDay(sid, type, fromDate, toDate);
 
         Set<String> campNames = campByDay.stream()
             .map(CampDay::getName)
@@ -84,6 +88,8 @@ public class AggregationStatisticService {
 
                     CampaignEfficiency campaignEfficiency = new CampaignEfficiency(campDay, orderDay);
 
+                    campaignEfficiency.setNetProfit(calNetProfit(currentShop, campaignEfficiency.getCommission(), campaignEfficiency.getSpent()));
+
                     // Add mapped campaign
                     campaignEfficiencies.add(campaignEfficiency);
                 }
@@ -100,6 +106,7 @@ public class AggregationStatisticService {
             otherCompare.setSpent(otherSpent);
             otherCompare.setOrders(otherOrders);
             otherCompare.setCommission(otherCommission);
+            otherCompare.setNetProfit(calNetProfit(currentShop, otherCompare.getCommission(), otherCompare.getSpent()));
 
             OrderDay orderDay = orderDayNameMap.get("");
 
@@ -123,5 +130,11 @@ public class AggregationStatisticService {
         }
 
         return aggregationResults;
+    }
+
+    private BigDecimal calNetProfit(Shop shop, BigDecimal commission, BigDecimal spent) {
+        BigDecimal netCommission = MathUtils.isPositive(commission) ? commission.multiply(BigDecimal.ONE.subtract(shop.getSalesTax())) : BigDecimal.ZERO;
+        BigDecimal netSpent = MathUtils.isPositive(spent) ? spent.multiply(BigDecimal.ONE.add(shop.getMarketingFee())) : BigDecimal.ZERO;
+        return netCommission.subtract(netSpent);
     }
 }

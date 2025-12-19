@@ -22,17 +22,19 @@ public class AffQuery {
 
     private final JdbcClient jdbcClient;
 
-    public List<OrderDay> queryOrderByDay(Long sid, @Nullable String campName, LocalDate fromDate, LocalDate toDate) {
+    public List<OrderDay> queryOrderByDay(Long sid, String type, LocalDate fromDate, LocalDate toDate) {
         String sql = """
-                SELECT (clickTime::date) AS date,
+                SELECT ({{type}}::date) AS date,
                     subId1 AS name,
                     COUNT(DISTINCT orderId) AS orders,
                     COALESCE(SUM(totalProductCommission),0) AS commission
                 FROM orders
-                WHERE sId = :sId AND clickTime >= :from AND clickTime < :to %s
+                WHERE sId = :sId AND {{type}} >= :from AND {{type}} < :to
                 GROUP BY date, name
                 ORDER BY date, name;
-                """;
+                """.replace("{{type}}", type);
+
+        System.out.println(sql);
 
         Map<String, Object> params = new HashMap<>() {{
             put("sId", sid);
@@ -40,27 +42,20 @@ public class AffQuery {
             put("to", toDate.plusDays(1).atStartOfDay());
         }};
 
-        String campNameCondition = "";
-
-        if (campName != null) {
-            campNameCondition = "AND subId1 = :name";
-            params.put("name", campName);
-        }
-
-        return jdbcClient.sql(sql.formatted(campNameCondition))
+        return jdbcClient.sql(sql)
             .params(params)
             .query(new OrderDayMapper())
             .list();
     }
 
-    public List<CampDay> queryCampByDay(Long sid, @Nullable String campName, LocalDate fromDate, LocalDate toDate) {
+    public List<CampDay> queryCampByDay(Long sid, LocalDate fromDate, LocalDate toDate) {
         String sql = """
             SELECT (date::date) AS date,
                 lower(campaignName) AS name,
                 COALESCE(SUM(results),0) AS results,
                 COALESCE(SUM(amountSpent),0) AS spent
             FROM ads
-            WHERE sId = :sId AND date >= :from AND date < :to %s
+            WHERE sId = :sId AND date >= :from AND date < :to
             GROUP BY date, name
             order by date, name
             """;
@@ -71,14 +66,7 @@ public class AffQuery {
             put("to", toDate.plusDays(1).atStartOfDay());
         }};
 
-        String campNameCondition = "";
-
-        if (campName != null) {
-            campNameCondition = "AND lower(campaignName) = :name";
-            params.put("name", campName);
-        }
-
-        return jdbcClient.sql(sql.formatted(campNameCondition))
+        return jdbcClient.sql(sql)
             .params(params)
             .query(new CampDayMapper())
             .list();

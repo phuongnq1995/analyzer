@@ -1,8 +1,11 @@
 package org.phuongnq.analyzer.service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.phuongnq.analyzer.dto.info.RegisterRequest;
+import org.phuongnq.analyzer.dto.info.ShopSettings;
 import org.phuongnq.analyzer.repository.entity.Role;
 import org.phuongnq.analyzer.repository.entity.Shop;
 import org.phuongnq.analyzer.repository.entity.User;
@@ -29,6 +32,7 @@ public class UserService implements UserDetailsService {
     private final RoleRepository roleRepository;
     private final ShopRepository shopRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ModelMapper mapper;
 
     @Transactional
     public User register(RegisterRequest req) {
@@ -79,12 +83,34 @@ public class UserService implements UserDetailsService {
 
     @Transactional(readOnly = true)
     public Long getCurrentShopId() {
+        return getCurrentShop().getId();
+    }
+
+    @Transactional(readOnly = true)
+    public Shop getCurrentShop() {
         String username = AuthenticationUtil.getCurrentUsername();
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
         return shopRepository.findByUserId(user.getId())
-            .get(0)
-            .getId();
+            .get(0);
+    }
+
+    @Transactional(readOnly = true)
+    public ShopSettings getCurrentShopSettings() {
+        Shop shop = getCurrentShop();
+        return mapper.map(shop, ShopSettings.class);
+    }
+
+    @Transactional
+    public void updateShop(ShopSettings req) {
+        Shop shop = getCurrentShop();
+
+        shop.setName(req.getName());
+        shop.setDescription(req.getDescription());
+        shop.setMarketingFee(BigDecimal.valueOf(req.getMarketingFee()));
+        shop.setSalesTax(BigDecimal.valueOf(req.getSalesTax()));
+
+        shopRepository.save(shop);
     }
 }
 
