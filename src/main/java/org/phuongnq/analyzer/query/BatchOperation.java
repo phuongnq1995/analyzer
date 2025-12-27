@@ -13,10 +13,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.phuongnq.analyzer.dto.aff.AdsDto;
 import org.phuongnq.analyzer.dto.aff.OrderDto;
-import org.phuongnq.analyzer.query.model.ConversionPacingCurve;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class BatchOperation {
 
     private final JdbcTemplate jdbcTemplate;
-    private final JdbcClient client;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int batchInsertOrUpdateAds(Long sid, List<AdsDto> entities) {
@@ -68,6 +65,7 @@ public class BatchOperation {
         }).length;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int batchInsertOrUpdateOrders(Long sid, List<OrderDto> entities) {
         String insertSql = String.format("""
             INSERT INTO orders (sId, %s) VALUES (?, %s)
@@ -139,41 +137,45 @@ public class BatchOperation {
             }
         }).length;
     }
-    public void batchInsert(List<ConversionPacingCurve> entities) {
-        String insertSql = String.format("""
-            INSERT INTO conversion_pacing_curve (sId, name, date, delayDays, revenue, percentage) VALUES (?, ?, ?, ?, ?, ?)
-        """);
 
-        // For databases that don't support ON CONFLICT, you'd need separate update/insert logic or a stored procedure.
+    public int upsertCampaigns(Long sid, List<String> campaignNames) {
+        String insertSql = """
+            INSERT INTO campaign (sId, name, unmapped) VALUES (?, ?, false)
+            ON CONFLICT (sId, name) DO NOTHING
+        """;
 
-        jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+        return jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ConversionPacingCurve entity = entities.get(i);
-                ps.setLong(1,  entity.getSId());
-                ps.setString(2,  entity.getName());
-                setDate(ps, 3,  entity.getDate());
-                ps.setInt(4, entity.getDelayDate());
-                setBigDecimal(ps, 5, entity.getRevenue());
-                setBigDecimal(ps, 6, entity.getPercentage());
+                ps.setLong(1, sid);
+                ps.setString(2, campaignNames.get(i));
             }
 
             @Override
             public int getBatchSize() {
-                return entities.size();
+                return campaignNames.size();
             }
-        });
+        }).length;
     }
 
-    public int deleteConversionPacingCurve(Long sid, LocalDate from, LocalDate to) {
-        return client.sql("""
-                DELETE from conversion_pacing_curve
-                WHERE sId = :sId AND date >= :from AND date < :to
-            """)
-            .param("sId", sid)
-            .param("from", from.atStartOfDay())
-            .param("to", to.plusDays(1).atStartOfDay())
-            .update();
+    public int upsertSubIds(Long sid, List<String> subIds) {
+        String insertSql = """
+            INSERT INTO orderLink (sId, subId) VALUES (?, ?)
+            ON CONFLICT (sId, subId) DO NOTHING
+        """;
+
+        return jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, sid);
+                ps.setString(2, subIds.get(i));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return subIds.size();
+            }
+        }).length;
     }
 
     private String generatePlaceholders(String[] fields) {

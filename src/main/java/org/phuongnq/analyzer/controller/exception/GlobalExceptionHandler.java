@@ -2,6 +2,7 @@ package org.phuongnq.analyzer.controller.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.InitBinder;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -25,6 +27,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = {ConstraintViolationException.class, AuthenticationException.class})
     public ResponseEntity<APIResponse> handleValidationExceptions(Exception ex) {
+        log.error("Validation exception: {}", ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(createAPIResponse(ex.getMessage()));
     }
@@ -53,6 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<APIResponse> handleInternalServerError(Exception ex) {
+        log.error("Internal Server Error: {}", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(createAPIResponse(ex.getMessage()));
     }

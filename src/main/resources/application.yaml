@@ -3,13 +3,6 @@ server:
   port: ${PORT:8080}
   forward-headers-strategy: framework
 
-servlet:
-  multipart:
-    enabled: true
-    file-size-threshold: 2MB
-    max-file-size: 200MB
-    max-request-size: 200MB
-
 spring:
   application:
     name: analyzer
@@ -24,11 +17,12 @@ spring:
     hikari:
       maximum-pool-size: 5
       minimum-idle: 5
-
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
       hibernate:
         format_sql: false
@@ -36,6 +30,12 @@ spring:
   flyway:
     enabled: false
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      enabled: true
+      file-size-threshold: 2MB
+      max-file-size: 200MB
+      max-request-size: 200MB
 
 jwt:
   secret: ${JWT_SECRET}

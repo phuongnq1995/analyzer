@@ -108,16 +108,6 @@ public class AggregationStatisticService {
             otherCompare.setCommission(otherCommission);
             otherCompare.setNetProfit(calNetProfit(currentShop, otherCompare.getCommission(), otherCompare.getSpent()));
 
-            OrderDay orderDay = orderDayNameMap.get("");
-
-            if (orderDay != null) {
-                otherCompare.setOrders(orderDay.getOrders());
-                otherCompare.setCommission(orderDay.getCommission());
-            } else {
-                otherCompare.setOrders(0);
-                otherCompare.setCommission(BigDecimal.ZERO);
-            }
-
             otherCompare.generateData();
             // Add other compare
             campaignEfficiencies.add(otherCompare);

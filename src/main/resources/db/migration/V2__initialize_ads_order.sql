@@ -74,8 +74,62 @@ CREATE TABLE ads (
     amountSpent         DECIMAL(18,2)
 );
 
+
 CREATE INDEX idx_orders_sid_clickTime ON orders (sId, clickTime, name);
 CREATE INDEX idx_ads_sid_date ON ads (sId, date, name);
+
+
+CREATE MATERIALIZED VIEW mv_orders_by_click_date AS
+SELECT sId AS sId,
+   (clickTime::date) AS date,
+   subId1 AS name,
+   COUNT(DISTINCT orderId) AS orders,
+   COALESCE(SUM(totalProductCommission),0) AS commission
+FROM orders
+GROUP BY sId, date, name
+ORDER BY sId, date, name
+WITH DATA;
+
+CREATE MATERIALIZED VIEW mv_orders_by_order_date AS
+SELECT sId AS sId,
+   (orderTime::date) AS date,
+   subId1 AS name,
+   COUNT(DISTINCT orderId) AS orders,
+   COALESCE(SUM(totalProductCommission),0) AS commission
+FROM orders
+GROUP BY sId, date, name
+ORDER BY sId, date, name
+WITH DATA;
+
+CREATE MATERIALIZED VIEW mv_ads_date AS
+SELECT sId as sId,
+    (date::date) AS date,
+    lower(campaignName) AS name,
+    COALESCE(SUM(results),0) AS results,
+    COALESCE(SUM(amountSpent),0) AS spent
+FROM ads
+GROUP BY sId, date, name
+order by sId, date, name
+WITH DATA;
+
+
+CREATE TABLE campaign (
+  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sId             BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+  name            VARCHAR(500),
+  unmapped        BOOLEAN DEFAULT FALSE,
+  normalizedName  VARCHAR(255),
+  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL,
+  UNIQUE (sId, name)
+);
+
+CREATE TABLE orderLink (
+  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sId             BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+  subId           VARCHAR(255),
+  UNIQUE (sId, subId)
+);
+
 
 CREATE TABLE conversion_pacing_curve (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -118,8 +172,11 @@ CREATE TABLE estimate_sales (
 
 
 
+CREATE INDEX idx_orders_sid_clickTime_orderTime_name
+ON orders (sId, clickTime, orderTime, name);
 
-
+CREATE INDEX idx_ads_sid_date_campaignName
+ON ads (sId, date, campaignName);
 
 
 

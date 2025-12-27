@@ -13,28 +13,27 @@ import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.OrderDay;
 import org.phuongnq.analyzer.query.model.OrderDelay;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
 public class AffQuery {
 
+    private static final Map<String, String> TYPE_VIEW_MAPPING = new HashMap<>() {{
+        put("clickTime", "mv_orders_by_click_date");
+        put("orderTime", "mv_orders_by_order_date");
+    }};
+
     private final JdbcClient jdbcClient;
 
     public List<OrderDay> queryOrderByDay(Long sid, String type, LocalDate fromDate, LocalDate toDate) {
         String sql = """
-                SELECT ({{type}}::date) AS date,
-                    subId1 AS name,
-                    COUNT(DISTINCT orderId) AS orders,
-                    COALESCE(SUM(totalProductCommission),0) AS commission
-                FROM orders
-                WHERE sId = :sId AND {{type}} >= :from AND {{type}} < :to
-                GROUP BY date, name
-                ORDER BY date, name;
-                """.replace("{{type}}", type);
-
-        System.out.println(sql);
+                SELECT date, name, orders, commission
+                FROM %s
+                WHERE sId = :sId AND date >= :from AND date < :to
+                """.formatted(TYPE_VIEW_MAPPING.getOrDefault(type, "mv_orders_by_click_date"));
 
         Map<String, Object> params = new HashMap<>() {{
             put("sId", sid);
@@ -50,14 +49,9 @@ public class AffQuery {
 
     public List<CampDay> queryCampByDay(Long sid, LocalDate fromDate, LocalDate toDate) {
         String sql = """
-            SELECT (date::date) AS date,
-                lower(campaignName) AS name,
-                COALESCE(SUM(results),0) AS results,
-                COALESCE(SUM(amountSpent),0) AS spent
-            FROM ads
+            SELECT date, name, results, spent
+            FROM mv_ads_date
             WHERE sId = :sId AND date >= :from AND date < :to
-            GROUP BY date, name
-            order by date, name
             """;
 
         Map<String, Object> params = new HashMap<>() {{
@@ -149,5 +143,16 @@ public class AffQuery {
             .params(params)
             .query(new OrderDelayMapper())
             .list();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void refreshOrderData() {
+        jdbcClient.sql("REFRESH MATERIALIZED VIEW mv_orders_by_click_date").update();
+        jdbcClient.sql("REFRESH MATERIALIZED VIEW mv_orders_by_order_date").update();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void refreshAdsData() {
+        jdbcClient.sql("REFRESH MATERIALIZED VIEW mv_ads_date").update();
     }
 }
