@@ -1,17 +1,20 @@
 package org.phuongnq.analyzer.service;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.jspecify.annotations.Nullable;
-import org.phuongnq.analyzer.dto.info.ShopSettings;
+import org.apache.commons.lang3.StringUtils;
+import org.phuongnq.analyzer.dto.shop.CampaignDto;
+import org.phuongnq.analyzer.dto.shop.OrderLinkDto;
 import org.phuongnq.analyzer.repository.CampaignRepository;
 import org.phuongnq.analyzer.repository.OrderLinkRepository;
 import org.phuongnq.analyzer.repository.entity.Campaign;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class MappingService {
     private final CampaignRepository campaignRepository;
     private final OrderLinkRepository orderLinkRepository;
@@ -36,6 +40,7 @@ public class MappingService {
         }
 
         Set<String> campaignNames = campaigns.stream()
+            .filter(Campaign::isUnmapped)
             .map(Campaign::getName)
             .map(String::toLowerCase)
             .collect(Collectors.toSet());
@@ -53,16 +58,16 @@ public class MappingService {
     }
 
     @Transactional
-    public void mappingSameOrderSubIdsToCampaigns(Long sId, List<OrderLink> newOrderLinks) {
-        if (newOrderLinks.isEmpty()) {
+    public void mappingSameOrderSubIdsToCampaigns(Long sId, List<OrderLink> orderLinks) {
+        if (orderLinks.isEmpty()) {
             return;
         }
 
-        Set<String> subIds = newOrderLinks.stream()
+        Set<String> subIds = orderLinks.stream()
             .map(OrderLink::getSubId)
             .collect(Collectors.toSet());
 
-        List<Campaign> campaigns = campaignRepository.findByShopIdAndNormalizedNameIn(sId, subIds);
+        List<Campaign> campaigns = campaignRepository.findUnmappedByShopIAndNormalizedNameIn(sId, subIds);
 
         if (campaigns.isEmpty()) {
             return;
@@ -71,26 +76,26 @@ public class MappingService {
         Map<String, Campaign> campaignMap = campaigns.stream()
             .collect(Collectors.toMap(Campaign::getName, Function.identity()));
 
-        mappingOrderSubIds(newOrderLinks, campaignMap);
+        mappingOrderSubIds(orderLinks, campaignMap);
     }
 
-    private void mappingOrderSubIds(List<OrderLink> newOrderLinks, Map<String, Campaign> campaignMap) {
+    private void mappingOrderSubIds(List<OrderLink> orderLinks, Map<String, Campaign> campaignMap) {
 
-        List<OrderLink> orderLinks = new ArrayList<>();
+        List<OrderLink> changedOrderLinks = new ArrayList<>();
 
-        for (OrderLink orderLink : newOrderLinks) {
+        for (OrderLink orderLink : orderLinks) {
 
             Campaign campaign = campaignMap.get(orderLink.getSubId());
 
-            if (campaign != null && campaign.isUnmapped()) {
+            if (campaign != null) {
                 orderLink.addCampaign(campaign);
 
-                orderLinks.add(orderLink);
+                changedOrderLinks.add(orderLink);
             }
         }
 
-        if (CollectionUtils.isNotEmpty(orderLinks)) {
-            orderLinkRepository.saveAll(orderLinks);
+        if (CollectionUtils.isNotEmpty(changedOrderLinks)) {
+            orderLinkRepository.saveAll(changedOrderLinks);
         }
     }
 
@@ -103,7 +108,7 @@ public class MappingService {
 
             if (orderLink != null) {
                 campaign.setOrderLink(orderLink);
-                campaign.setUnmapped(true);
+                campaign.setUnmapped(false);
 
                 updateCampaigns.add(campaign);
             }
@@ -111,6 +116,8 @@ public class MappingService {
 
         if (CollectionUtils.isNotEmpty(updateCampaigns)) {
             campaignRepository.saveAll(updateCampaigns);
+
+            log.info("Mapped {} campaign to link", updateCampaigns.size());
         }
     }
 
@@ -122,55 +129,131 @@ public class MappingService {
 
         List<Campaign> campaigns = campaignRepository.findByShopIdAndNormalizedNameIn(sid, campaignNameMap.values());
 
+        List<Campaign> allCampaigns = new ArrayList<>(campaigns);
+
         Set<String> newCampaignNames = new HashSet<>(campaignNames);
         newCampaignNames.removeAll(campaigns.stream()
             .map(Campaign::getName)
             .collect(Collectors.toSet()));
 
-        if (newCampaignNames.isEmpty()) {
-            return Collections.emptyList();
+        if (!newCampaignNames.isEmpty()) {
+
+            Shop shop = userService.getCurrentShop();
+
+            List<Campaign> newCampaigns = newCampaignNames.stream()
+                .map(campName -> Campaign.builder()
+                    .name(campName)
+                    .normalizedName(NormalizerUtils.normalizeName(campName))
+                    .shop(shop)
+                    .unmapped(true)
+                    .build())
+                .collect(Collectors.toList());
+
+            newCampaigns = campaignRepository.saveAll(newCampaigns);
+
+            log.info("Shop {}, inserted new {} campaigns", sid, newCampaigns.size());
+
+            allCampaigns.addAll(newCampaigns);
         }
 
-        Shop shop = userService.getCurrentShop();
-
-        List<Campaign> newCampaigns = newCampaignNames.stream()
-            .map(campName -> Campaign.builder()
-                .name(campName)
-                .normalizedName(NormalizerUtils.normalizeName(campName))
-                .shop(shop)
-                .unmapped(false)
-                .build())
-            .collect(Collectors.toList());
-
-        return campaignRepository.saveAll(newCampaigns);
+        return allCampaigns;
     }
 
     @Transactional
     public List<OrderLink> upsertOrderSubIds(Long sid, Set<String> subIds) {
         List<OrderLink> orderLinks = orderLinkRepository.findByShopIdAndSubIdIn(sid, subIds);
 
+        List<OrderLink> allLinks = new ArrayList<>(orderLinks);
+
         Set<String> newOrderSubIds = new HashSet<>(subIds);
         newOrderSubIds.removeAll(orderLinks.stream()
             .map(OrderLink::getSubId)
             .collect(Collectors.toSet()));
 
-        if (newOrderSubIds.isEmpty()) {
-            return Collections.emptyList();
+        if (!newOrderSubIds.isEmpty()) {
+            Shop shop = userService.getCurrentShop();
+
+            List<OrderLink> newOrderLinks = newOrderSubIds.stream()
+                .map(subId -> OrderLink.builder()
+                    .subId(subId)
+                    .shop(shop)
+                    .build())
+                .collect(Collectors.toList());
+
+            newOrderLinks = orderLinkRepository.saveAll(newOrderLinks);
+
+            log.info("Shop {}, inserted new {} order links.", sid, newOrderLinks.size());
+
+            allLinks.addAll(newOrderLinks);
         }
 
-        Shop shop = userService.getCurrentShop();
-
-        List<OrderLink> newOrderLinks = newOrderSubIds.stream()
-            .map(subId -> OrderLink.builder()
-                .subId(subId)
-                .shop(shop)
-                .build())
-            .collect(Collectors.toList());
-
-        return orderLinkRepository.saveAll(newOrderLinks);
+        return allLinks;
     }
 
-    public void getCampaigns() {
+    @Transactional(readOnly = true)
+    public List<OrderLink> getOrderLinks(Shop shop) {
+        List<OrderLink> orderLinks = orderLinkRepository.getAll(shop);
 
+        List<Campaign> unmappedCampaigns = getUnmappedCampaigns(shop);
+
+        boolean existedOther = false;
+        final ListIterator<OrderLink> li = orderLinks.listIterator();
+        while (li.hasNext()) {
+            OrderLink orderLink = li.next();
+            if (orderLink.getSubId().equals("")) {
+                li.set(new OrderLink(-1L, "", shop, Set.copyOf(unmappedCampaigns)));
+                existedOther = true;
+                break;
+            }
+        }
+
+        if (!existedOther) {
+            orderLinks.add(new OrderLink(-1L, "", shop, Set.copyOf(unmappedCampaigns)));
+        }
+
+        return orderLinks;
+    }
+
+    @Transactional(readOnly = true)
+    public List<CampaignDto> getCampaigns() {
+        Shop shop = userService.getCurrentShop();
+        return campaignRepository.getAll(shop);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Campaign> getUnmappedCampaigns(Shop shop) {
+        return campaignRepository.getUnmappedCampaigns(shop);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderLinkDto> getOrderLinks() {
+        Shop shop = userService.getCurrentShop();
+
+        return orderLinkRepository.getAll(shop).stream()
+            .filter(entity -> StringUtils.isNotEmpty(entity.getSubId()))
+            .map(entity -> {
+                Collection<CampaignDto> campaignDtos = entity.getCampaigns().stream()
+                    .map(campaign -> new CampaignDto(campaign.getId(), campaign.getName(), false))
+                    .toList();
+                return new OrderLinkDto(entity.getId(), entity.getSubId(), campaignDtos);
+            })
+            .toList();
+    }
+
+    @Transactional
+    public void updateMapping(Long campaignId, Long linkId) {
+        Campaign campaign = campaignRepository.findById(campaignId).orElseThrow();
+        OrderLink orderLink = orderLinkRepository.findById(linkId).orElseThrow();
+        campaign.setOrderLink(orderLink);
+        campaign.setUnmapped(false);
+        campaignRepository.save(campaign);
+    }
+
+    @Transactional
+    public void deleteCampaignMapping(Long campaignId) {
+        Campaign campaign = campaignRepository.findById(campaignId).orElseThrow();
+        campaign.setOrderLink(null);
+        campaign.setUnmapped(true);
+        campaignRepository.save(campaign);
     }
 }

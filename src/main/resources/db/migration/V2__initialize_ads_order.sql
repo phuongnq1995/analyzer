@@ -75,8 +75,10 @@ CREATE TABLE ads (
 );
 
 
-CREATE INDEX idx_orders_sid_clickTime ON orders (sId, clickTime, name);
-CREATE INDEX idx_ads_sid_date ON ads (sId, date, name);
+CREATE INDEX idx_orders_sid_clickTime_name ON orders (sId, clickTime, subId1);
+CREATE INDEX idx_orders_sid_orderTime_name ON orders (sId, orderTime, subId1);
+CREATE INDEX idx_ads_sid_date_name ON ads (sId, date, adName);
+
 
 
 CREATE MATERIALIZED VIEW mv_orders_by_click_date AS
@@ -113,15 +115,10 @@ order by sId, date, name
 WITH DATA;
 
 
-CREATE TABLE campaign (
-  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  sId             BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
-  name            VARCHAR(500),
-  unmapped        BOOLEAN DEFAULT FALSE,
-  normalizedName  VARCHAR(255),
-  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL,
-  UNIQUE (sId, name)
-);
+CREATE INDEX idx_mv_ads_date_1 ON mv_ads_date (sId, date);
+CREATE INDEX idx_mv_orders_by_order_date_1 ON mv_orders_by_order_date (sId, date);
+CREATE INDEX idx_mv_orders_by_click_date_1 ON mv_orders_by_click_date (sId, date);
+
 
 CREATE TABLE orderLink (
   id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -131,14 +128,14 @@ CREATE TABLE orderLink (
 );
 
 
-CREATE TABLE conversion_pacing_curve (
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
-    name                VARCHAR(255),
-    date                DATE,
-    delayDays           INT,
-    revenue             DECIMAL(18,2),
-    percentage          DECIMAL(10,4)
+CREATE TABLE campaign (
+  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sId             BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+  name            VARCHAR(500),
+  unmapped        BOOLEAN DEFAULT FALSE,
+  normalizedName  VARCHAR(255),
+  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL,
+  UNIQUE (sId, name)
 );
 
 CREATE TABLE recommendation (
@@ -159,42 +156,3 @@ CREATE TABLE recommendation_campaign (
     action              VARCHAR(255),
     advise              VARCHAR(500)
 );
-
-CREATE TABLE estimate_sales (
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
-    campaignName        VARCHAR(255),
-    requestTime         TIMESTAMP WITHOUT TIME ZONE,
-    createdAt           TIMESTAMP WITHOUT TIME ZONE,
-    finishedTime        TIMESTAMP WITHOUT TIME ZONE,
-    content             VARCHAR(2000)
-);
-
-
-
-CREATE INDEX idx_orders_sid_clickTime_orderTime_name
-ON orders (sId, clickTime, orderTime, name);
-
-CREATE INDEX idx_ads_sid_date_campaignName
-ON ads (sId, date, campaignName);
-
-
-
-
-
-CREATE VIEW campaignDay AS
-SELECT (date::date) AS dt, lower(campaignName), sid
-COALESCE(SUM(results),0) AS results,
-COALESCE(SUM(amountSpent),0) AS spent
-FROM ads
-GROUP BY dt, campaignName, sid
-order by dt, campaignName, sid;
-
-CREATE VIEW offerDay AS
-SELECT (clickTime::date) AS dt, subId1, sid
-COUNT(DISTINCT orderId) AS orders,
-COALESCE(SUM(netAffiliateMarketingCommission),0) AS commission,
-COALESCE(SUM(orderValue),0) AS revenue
-FROM orders
-GROUP BY subId1, dt, sid
-order by dt, subId1, sid;

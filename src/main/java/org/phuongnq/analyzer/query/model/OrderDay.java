@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderDay {
-    public LocalDate date;
-    public String name;
-    public int orders;
-    public BigDecimal commission;
+    private LocalDate date;
+    private String name;
+    private int orders = 0;
+    private BigDecimal commission = BigDecimal.ZERO;
 }

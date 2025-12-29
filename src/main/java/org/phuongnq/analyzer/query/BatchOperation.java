@@ -16,7 +16,6 @@ import org.phuongnq.analyzer.dto.aff.OrderDto;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -25,7 +24,7 @@ public class BatchOperation {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public int batchInsertOrUpdateAds(Long sid, List<AdsDto> entities) {
         String insertSql = String.format("""
             INSERT INTO ads (sId, %s) VALUES (?, %s)
@@ -65,7 +64,7 @@ public class BatchOperation {
         }).length;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public int batchInsertOrUpdateOrders(Long sid, List<OrderDto> entities) {
         String insertSql = String.format("""
             INSERT INTO orders (sId, %s) VALUES (?, %s)

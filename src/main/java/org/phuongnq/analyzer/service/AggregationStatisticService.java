@@ -1,23 +1,30 @@
 package org.phuongnq.analyzer.service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.model.AggregationByDateResult;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.CampaignEfficiency;
 import org.phuongnq.analyzer.query.model.OrderDay;
+import org.phuongnq.analyzer.repository.entity.Campaign;
+import org.phuongnq.analyzer.repository.entity.OrderLink;
 import org.phuongnq.analyzer.repository.entity.Shop;
 import org.phuongnq.analyzer.utils.MathUtils;
+import org.phuongnq.analyzer.utils.NormalizerUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,99 +34,91 @@ public class AggregationStatisticService {
 
     private final AffQuery affQuery;
     private final UserService service;
+    private final MappingService mappingService;
 
     public List<AggregationByDateResult> getCompareAggregationStatistics(LocalDate fromDate, LocalDate toDate,
         String type) {
-        // return result object
-        log.info("Fetching aggregation statistics from {} to {}", fromDate, toDate);
-        Shop currentShop = service.getCurrentShop();
-        Long sid = currentShop.getId();
+
+        Instant start = Instant.now();
+        List<AggregationByDateResult> aggregationResults = new ArrayList<>();
+
+        Shop shop = service.getCurrentShop();
+        Long sid = shop.getId();
 
         List<CampDay> campByDay = affQuery.queryCampByDay(sid, fromDate, toDate);
         List<OrderDay> orderByDay = affQuery.queryOrderByDay(sid, type, fromDate, toDate);
 
-        Set<String> campNames = campByDay.stream()
-            .map(CampDay::getName)
-            .collect(Collectors.toSet());
-
-        Set<String> orderNames = orderByDay.stream()
-            .map(OrderDay::getName)
-            .collect(Collectors.toSet());
-
-        String otherOrder = "";
-        orderNames.remove(otherOrder);
-
-        Set<String> otherCampaigns = new HashSet<>(campNames);
-        otherCampaigns.removeAll(orderNames);
-
         Map<LocalDate, List<CampDay>> campDayMap = campByDay.stream()
             .collect(Collectors.groupingBy(CampDay::getDate));
-
         Map<LocalDate, List<OrderDay>> orderDayMap = orderByDay.stream()
             .collect(Collectors.groupingBy(OrderDay::getDate));
 
-        List<AggregationByDateResult> aggregationResults = new ArrayList<>();
+        List<OrderLink> orderLinks = mappingService.getOrderLinks(shop);
 
         LocalDate date = fromDate;
         while (!date.isAfter(toDate)) {
-            List<CampaignEfficiency> campaignEfficiencies = new ArrayList<>();
-            AggregationByDateResult result = new AggregationByDateResult();
-            result.setDate(date);
 
-            List<CampDay> campDays = campDayMap.getOrDefault(date, List.of());
-            Map<String, OrderDay> orderDayNameMap = orderDayMap.getOrDefault(date, List.of())
+            Map<String, CampDay> campMap = campDayMap.getOrDefault(date, Collections.emptyList())
+                .stream()
+                .collect(
+                    Collectors.toMap(campDay -> NormalizerUtils.normalizeName(campDay.getName()), Function.identity()));
+
+            Map<String, OrderDay> orderMap = orderDayMap.getOrDefault(date, Collections.emptyList())
                 .stream()
                 .collect(Collectors.toMap(OrderDay::getName, Function.identity()));
 
-            CampaignEfficiency otherCompare = new CampaignEfficiency();
-            otherCompare.setName("Other");
-            otherCompare.setDate(date);
+            AggregationByDateResult aggregationByDateResult = mappingEfficiencyByDate(orderLinks, campMap, orderMap, date, shop);
 
-            int otherResults = 0;
-            int otherOrders = 0;
-            BigDecimal otherSpent = BigDecimal.ZERO;
-            BigDecimal otherCommission = BigDecimal.ZERO;
-            for (CampDay campDay : campDays) {
-                if (otherCampaigns.contains(campDay.getName())) {
-                    otherResults += campDay.getResults();
-                    otherSpent = otherSpent.add(campDay.getSpent());
-                } else {
-                    OrderDay orderDay = orderDayNameMap.remove(campDay.getName());
-
-                    CampaignEfficiency campaignEfficiency = new CampaignEfficiency(campDay, orderDay);
-
-                    campaignEfficiency.setNetProfit(calNetProfit(currentShop, campaignEfficiency.getCommission(), campaignEfficiency.getSpent()));
-
-                    // Add mapped campaign
-                    campaignEfficiencies.add(campaignEfficiency);
-                }
-            }
-
-            for (String remainingOrderDayName : orderDayNameMap.keySet()) {
-                OrderDay orderDay = orderDayNameMap.get(remainingOrderDayName);
-
-                otherOrders += orderDay.getOrders();
-                otherCommission = otherCommission.add(orderDay.getCommission());
-            }
-
-            otherCompare.setClicks(otherResults);
-            otherCompare.setSpent(otherSpent);
-            otherCompare.setOrders(otherOrders);
-            otherCompare.setCommission(otherCommission);
-            otherCompare.setNetProfit(calNetProfit(currentShop, otherCompare.getCommission(), otherCompare.getSpent()));
-
-            otherCompare.generateData();
-            // Add other compare
-            campaignEfficiencies.add(otherCompare);
-
-            result.setCampaignEfficiencies(campaignEfficiencies);
-
-            aggregationResults.add(result);
+            aggregationResults.add(aggregationByDateResult);
 
             date = date.plusDays(1);
         }
 
+        log.info("Shop {}: Fetched aggregation statistics from {} to {}, in {} ms",
+            sid, fromDate, toDate, Duration.between(start, Instant.now()).toMillis());
+
         return aggregationResults;
+    }
+
+    private AggregationByDateResult mappingEfficiencyByDate(List<OrderLink> orderLinks, Map<String, CampDay> campMap,
+        Map<String, OrderDay> orderMap, LocalDate date, Shop shop) {
+
+        List<CampaignEfficiency> campaignEfficiencies = new ArrayList<>();
+        AggregationByDateResult result = new AggregationByDateResult(date, campaignEfficiencies);
+
+        for (OrderLink orderLink : orderLinks) {
+
+            Optional<CampDay> totalCampDay = orderLink.getCampaigns().stream()
+                .map(Campaign::getNormalizedName)
+                .filter(name -> {
+                    if (!campMap.containsKey(name)) {
+                        return false;
+                    }
+                    CampDay campDay = campMap.get(name);
+                    return campDay != null && (campDay.getResults() > 0 || MathUtils.isPositive(campDay.getSpent()));
+                })
+                .map(campMap::get)
+                .reduce((campDay, campDay2) -> {
+                    campDay.setSpent(campDay.getSpent().add(campDay2.getSpent()));
+                    campDay.setResults(campDay.getResults() + campDay2.getResults());
+                    campDay.setName(StringUtils.isEmpty(orderLink.getSubId()) ? "Others" : orderLink.getSubId());
+                    return campDay;
+                });
+
+            if (orderMap.containsKey(orderLink.getSubId()) || totalCampDay.isPresent()) {
+
+                CampDay campDay = totalCampDay.orElse(new CampDay(date, orderLink.getSubId(), 0, BigDecimal.ZERO));
+                OrderDay orderDay = orderMap.getOrDefault(orderLink.getSubId(), new OrderDay(date, orderLink.getSubId(), 0, BigDecimal.ZERO));
+
+                CampaignEfficiency efficiency = new CampaignEfficiency(campDay, orderDay);
+                efficiency.setNetProfit(calNetProfit(shop, efficiency.getCommission(), efficiency.getSpent()));
+
+                // Add mapped campaign
+                campaignEfficiencies.add(efficiency);
+            }
+        }
+
+        return result;
     }
 
     private BigDecimal calNetProfit(Shop shop, BigDecimal commission, BigDecimal spent) {

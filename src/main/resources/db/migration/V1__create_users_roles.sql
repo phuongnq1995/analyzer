@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS shop (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(1000),
-    marketing_fee DECIMAL(10,4) DEFAULT 0.01,
-    sales_tax DECIMAL(10,4) DEFAULT 0.1,
+    marketingFee    DECIMAL(10,4) default 0.01,
+    salesTax        DECIMAL(10,4) default 0.1,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );

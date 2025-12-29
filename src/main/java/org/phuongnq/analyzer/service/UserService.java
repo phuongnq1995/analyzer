@@ -57,6 +57,8 @@ public class UserService implements UserDetailsService {
         Shop shop = Shop.builder()
             .name(req.getShopName())
             .description(req.getShopDescription())
+            .marketingFee(BigDecimal.valueOf(0.01))
+            .salesTax(BigDecimal.valueOf(0.1))
             .user(user)
             .build();
 

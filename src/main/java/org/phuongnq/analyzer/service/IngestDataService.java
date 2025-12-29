@@ -1,5 +1,7 @@
 package org.phuongnq.analyzer.service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,6 +35,7 @@ public class IngestDataService {
 
     @Transactional
     public void ingestOrders(MultipartFile file, DateRange input) {
+        Instant start = Instant.now();
         Long sid = service.getCurrentShopId();
         int count = affQuery.cleanOrdersData(sid, input);
         List<OrderDto> orders = csvHelper.readOrderFromCsv(file);
@@ -43,40 +46,39 @@ public class IngestDataService {
 
         affQuery.refreshOrderData();
 
-        log.info("Inserted {} rows of orders from {} to {}", insertCount, input.getFromDate(), input.getToDate());
+        log.info("Shop: {}, inserted {} rows of orders from {} to {}, in {} ms",
+            sid, insertCount, input.getFromDate(), input.getToDate(), Duration.between(start, Instant.now()).toMillis());
 
         Set<String> subIds = orders.stream()
             .map(OrderDto::getSubId1)
             .collect(Collectors.toSet());
 
-        List<OrderLink> newOrderLinks = mappingService.upsertOrderSubIds(sid, subIds);
+        List<OrderLink> orderLinks = mappingService.upsertOrderSubIds(sid, subIds);
 
-        log.info("Inserted {} rows of orderLink", newOrderLinks.size());
-
-        mappingService.mappingSameOrderSubIdsToCampaigns(sid, newOrderLinks);
+        mappingService.mappingSameOrderSubIdsToCampaigns(sid, orderLinks);
     }
 
     @Transactional
     public void ingestAds(MultipartFile file, DateRange input) {
+        Instant start = Instant.now();
         Long sid = service.getCurrentShopId();
         List<AdsDto> ads = csvHelper.readAdFromCsv(file);
         int count = affQuery.cleanAdsData(sid, input);
-        log.info("Deleted {} rows of ads from {} to {}", count, input.getFromDate(), input.getToDate());
+        log.info("Shop: {}, deleted {} rows of ads from {} to {}", sid, count, input.getFromDate(), input.getToDate());
 
         int insertCount = batchOperation.batchInsertOrUpdateAds(sid, ads);
 
         affQuery.refreshAdsData();
 
-        log.info("Inserted {} rows of ads from {} to {}", insertCount, input.getFromDate(), input.getToDate());
+        log.info("Shop: {}, inserted {} rows of ads from {} to {}, in {} ms",
+            sid, insertCount, input.getFromDate(), input.getToDate(), Duration.between(start, Instant.now()).toMillis());
 
         Set<String> campaignNames = ads.stream()
             .map(AdsDto::getCampaignName)
             .collect(Collectors.toSet());
 
-        List<Campaign> newCampaigns = mappingService.upsertCampaignNames(sid, campaignNames);
+        List<Campaign> campaigns = mappingService.upsertCampaignNames(sid, campaignNames);
 
-        log.info("Inserted {} rows of campaign", newCampaigns.size());
-
-        mappingService.mappingSameNameCampaignsToOrderLinks(sid, newCampaigns);
+        mappingService.mappingSameNameCampaignsToOrderLinks(sid, campaigns);
     }
 }

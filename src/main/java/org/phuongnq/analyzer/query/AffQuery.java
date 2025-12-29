@@ -14,7 +14,6 @@ import org.phuongnq.analyzer.query.model.OrderDay;
 import org.phuongnq.analyzer.query.model.OrderDelay;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
@@ -145,13 +144,13 @@ public class AffQuery {
             .list();
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void refreshOrderData() {
         jdbcClient.sql("REFRESH MATERIALIZED VIEW mv_orders_by_click_date").update();
         jdbcClient.sql("REFRESH MATERIALIZED VIEW mv_orders_by_order_date").update();
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void refreshAdsData() {
         jdbcClient.sql("REFRESH MATERIALIZED VIEW mv_ads_date").update();
     }

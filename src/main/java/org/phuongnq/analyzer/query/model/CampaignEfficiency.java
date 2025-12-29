@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 @AllArgsConstructor
@@ -47,13 +48,12 @@ public class CampaignEfficiency {
 
     public CampaignEfficiency(CampDay campDay, OrderDay orderDay) {
         this.date = campDay.getDate();
-        this.name = campDay.getName();
         this.clicks = campDay.getResults();
         this.spent = campDay.getSpent();
-        if (orderDay != null) {
-            this.orders = orderDay.getOrders();
-            this.commission = orderDay.getCommission();
-        }
+        this.name = StringUtils.isEmpty(orderDay.getName()) ? "Others" : orderDay.getName();
+        this.orders = orderDay.getOrders();
+        this.commission = orderDay.getCommission();
+
         generateData();
     }
 

@@ -30,8 +30,8 @@ public class OrderLink {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    String subId;
+    private Long id;
+    private String subId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sId")
@@ -42,6 +42,7 @@ public class OrderLink {
     private Set<Campaign> campaigns = new HashSet<>();
 
     public void addCampaign(Campaign campaign) {
+        campaign.setUnmapped(false);
         campaigns.add(campaign);
         campaign.setOrderLink(this);
     }

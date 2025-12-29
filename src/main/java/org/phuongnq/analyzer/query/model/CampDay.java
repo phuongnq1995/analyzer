@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class CampDay {
     public LocalDate date;
     public String name;
-    public int results;
-    public BigDecimal spent;
+    public int results = 0;
+    public BigDecimal spent = BigDecimal.ZERO;
 }
