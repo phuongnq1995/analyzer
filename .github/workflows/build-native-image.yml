@@ -3,7 +3,7 @@ name: Build Spring Boot Native Image and Push to Docker Hub
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   build-and-push:
