@@ -134,7 +134,7 @@ CREATE TABLE campaign (
   name            VARCHAR(500),
   unmapped        BOOLEAN DEFAULT FALSE,
   normalizedName  VARCHAR(255),
-  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL,
+  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL
   UNIQUE (sId, name)
 );
 

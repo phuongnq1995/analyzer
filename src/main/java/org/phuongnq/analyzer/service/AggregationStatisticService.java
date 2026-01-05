@@ -9,12 +9,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.model.AggregationByDateResult;
 import org.phuongnq.analyzer.query.model.CampDay;
@@ -35,14 +35,48 @@ public class AggregationStatisticService {
     private final AffQuery affQuery;
     private final UserService service;
     private final MappingService mappingService;
+    private final CacheService cacheService;
 
-    public List<AggregationByDateResult> getCompareAggregationStatistics(LocalDate fromDate, LocalDate toDate,
-        String type) {
+    public List<AggregationByDateResult> getAggregationStatistics(LocalDate from, LocalDate to, String type) {
+        Instant start = Instant.now();
 
+        Long sId = service.getCurrentShopId();
+
+        List<AggregationByDateResult> aggregation;
+
+        if (type.equals("clickTime")) {
+            aggregation = cacheService.getAggregateByClick(sId, from, to);
+        } else {
+            aggregation = cacheService.getAggregateByOrder(sId, from, to);
+        }
+
+        log.info("Shop {}: Fetched aggregation[{}] from {} to {}, in {} ms",
+            sId, type, from, to, Duration.between(start, Instant.now()).toMillis());
+
+        return aggregation;
+    }
+
+    public void cacheAggregates(Shop shop, DateRange input) {
+        Instant start = Instant.now();
+
+        List<AggregationByDateResult> aggregationByClickTimes = calAggregationStatistics(shop, input.getFromDate(),
+            input.getToDate(), "clickTime");
+
+        cacheService.cacheAggregateByClick(shop.getId(), input.getFromDate(), input.getToDate(), aggregationByClickTimes);
+
+        List<AggregationByDateResult> aggregationByOrderTimes = calAggregationStatistics(shop, input.getFromDate(),
+            input.getToDate(), "orderTime");
+
+        cacheService.cacheAggregateByOrder(shop.getId(), input.getFromDate(), input.getToDate(), aggregationByOrderTimes);
+
+        log.info("Shop {}: Cached aggregation from {} to {}, in {} ms",
+            shop.getId(), input.getFromDate(), input.getToDate(), Duration.between(start, Instant.now()).toMillis());
+    }
+
+    public List<AggregationByDateResult> calAggregationStatistics(Shop shop, LocalDate fromDate, LocalDate toDate, String type) {
         Instant start = Instant.now();
         List<AggregationByDateResult> aggregationResults = new ArrayList<>();
 
-        Shop shop = service.getCurrentShop();
         Long sid = shop.getId();
 
         List<CampDay> campByDay = affQuery.queryCampByDay(sid, fromDate, toDate);
@@ -90,13 +124,7 @@ public class AggregationStatisticService {
 
             Optional<CampDay> totalCampDay = orderLink.getCampaigns().stream()
                 .map(Campaign::getNormalizedName)
-                .filter(name -> {
-                    if (!campMap.containsKey(name)) {
-                        return false;
-                    }
-                    CampDay campDay = campMap.get(name);
-                    return campDay != null && (campDay.getResults() > 0 || MathUtils.isPositive(campDay.getSpent()));
-                })
+                .filter(name -> campMap.containsKey(name) && campMap.get(name) != null)
                 .map(campMap::get)
                 .reduce((campDay, campDay2) -> {
                     campDay.setSpent(campDay.getSpent().add(campDay2.getSpent()));
@@ -126,4 +154,5 @@ public class AggregationStatisticService {
         BigDecimal netSpent = MathUtils.isPositive(spent) ? spent.multiply(BigDecimal.ONE.add(shop.getMarketingFee())) : BigDecimal.ZERO;
         return netCommission.subtract(netSpent);
     }
+
 }

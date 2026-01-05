@@ -17,7 +17,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DataInitializer {
 
-    private final RoleRepository roleRepository;
+    /*private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -42,5 +42,5 @@ public class DataInitializer {
                     .build();
             userRepository.save(admin);
         }
-    }
+    }*/
 }

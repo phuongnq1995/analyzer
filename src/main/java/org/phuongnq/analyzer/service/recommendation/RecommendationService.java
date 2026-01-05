@@ -1,4 +1,4 @@
-package org.phuongnq.analyzer.service;
+package org.phuongnq.analyzer.service.recommendation;
 
 import java.util.Collections;
 import java.util.List;
@@ -6,6 +6,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.phuongnq.analyzer.dto.aff.RecommendationCampaign;
 import org.phuongnq.analyzer.query.AffQuery;
+import org.phuongnq.analyzer.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,4 +26,5 @@ public class RecommendationService {
         }
         return query.getRecommendationCampaigns(id.get());
     }
+
 }

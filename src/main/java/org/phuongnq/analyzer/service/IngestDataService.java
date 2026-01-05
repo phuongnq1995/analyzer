@@ -12,11 +12,10 @@ import org.phuongnq.analyzer.dto.aff.OrderDto;
 import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.BatchOperation;
-import org.phuongnq.analyzer.query.CampaignMappingQuery;
 import org.phuongnq.analyzer.repository.entity.Campaign;
 import org.phuongnq.analyzer.repository.entity.OrderLink;
+import org.phuongnq.analyzer.repository.entity.Shop;
 import org.phuongnq.analyzer.utils.CSVHelper;
-import org.phuongnq.analyzer.utils.NormalizerUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,14 +28,15 @@ public class IngestDataService {
     private final CSVHelper csvHelper;
     private final BatchOperation batchOperation;
     private final AffQuery affQuery;
-    private final CampaignMappingQuery campaignMappingQuery;
     private final MappingService mappingService;
     private final UserService service;
+    private final AggregationStatisticService statisticService;
 
     @Transactional
     public void ingestOrders(MultipartFile file, DateRange input) {
         Instant start = Instant.now();
-        Long sid = service.getCurrentShopId();
+        Shop shop = service.getCurrentShop();
+        Long sid = shop.getId();
         int count = affQuery.cleanOrdersData(sid, input);
         List<OrderDto> orders = csvHelper.readOrderFromCsv(file);
 
@@ -56,12 +56,15 @@ public class IngestDataService {
         List<OrderLink> orderLinks = mappingService.upsertOrderSubIds(sid, subIds);
 
         mappingService.mappingSameOrderSubIdsToCampaigns(sid, orderLinks);
+
+        statisticService.cacheAggregates(shop, input);
     }
 
     @Transactional
     public void ingestAds(MultipartFile file, DateRange input) {
         Instant start = Instant.now();
-        Long sid = service.getCurrentShopId();
+        Shop shop = service.getCurrentShop();
+        Long sid = shop.getId();
         List<AdsDto> ads = csvHelper.readAdFromCsv(file);
         int count = affQuery.cleanAdsData(sid, input);
         log.info("Shop: {}, deleted {} rows of ads from {} to {}", sid, count, input.getFromDate(), input.getToDate());
@@ -80,5 +83,7 @@ public class IngestDataService {
         List<Campaign> campaigns = mappingService.upsertCampaignNames(sid, campaignNames);
 
         mappingService.mappingSameNameCampaignsToOrderLinks(sid, campaigns);
+
+        statisticService.cacheAggregates(shop, input);
     }
 }
