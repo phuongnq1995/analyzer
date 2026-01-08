@@ -1,7 +1,6 @@
 package org.phuongnq.analyzer.query.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,11 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderDelay {
+public class ConversionCurve {
     private String name;
-    private LocalDate clickDate;
-    private LocalDate orderDate;
+    private int delay;
     private int orders;
     private BigDecimal revenue;
-    private int delayDays;
 }

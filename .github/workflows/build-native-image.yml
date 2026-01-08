@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - develop
+  pull_request:
+    branches:
+      - develop
 
 jobs:
   build-and-push:
@@ -20,7 +23,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21' # Use Java 21 or later for modern Spring Boot native support
+          java-version: '21'
 
       - name: Make mvnw executable
         run: chmod +x mvnw
@@ -35,8 +38,10 @@ jobs:
         run: echo "APP_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
         shell: bash
 
+      - name: Build Native Image with Maven
+        run: ./mvnw clean package -Pnative
+
       - name: Build and Push Docker Image (using Buildpacks)
-        # The image name must follow the format 'dockerhub_username/repository_name:tag'
         run: |
           ./mvnw spring-boot:build-image -Pnative \
-            -Dspring-boot.build-image.imageName=${{ secrets.DOCKERHUB_USERNAME }}/your-repo-name:${{ env.APP_VERSION }}
+            -Dspring-boot.build-image.imageName=${{ secrets.DOCKERHUB_USERNAME }}/analyzer:${{ env.APP_VERSION }}

@@ -6,15 +6,24 @@ import java.math.RoundingMode;
 public final class MathUtils {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
-    public static BigDecimal toPercentageOf(BigDecimal value, BigDecimal total) {
+    public static float toPercentageOf(BigDecimal value, BigDecimal total) {
+        return toFloat(toPercentage(value, total));
+    }
+
+    public static float toPercentageOf(int value, int total) {
+        return toFloat(toPercentage(BigDecimal.valueOf(value), BigDecimal.valueOf(total)));
+    }
+
+    public static BigDecimal toPercentage(BigDecimal value, BigDecimal total) {
         if (isZero(total)) {
             return BigDecimal.ZERO;
         }
         return value.divide(total, 4, RoundingMode.HALF_UP).multiply(ONE_HUNDRED);
     }
 
-    public static BigDecimal percentOf(BigDecimal percentage, BigDecimal total) {
-        return percentage.multiply(total).divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
+    public static float toFloat(BigDecimal original) {
+        BigDecimal roundedBigDecimal = original.setScale(2, RoundingMode.HALF_UP);
+        return roundedBigDecimal.floatValue();
     }
 
     public static boolean isZero(BigDecimal value) {

@@ -11,7 +11,7 @@ import org.phuongnq.analyzer.query.mapper.OrderDelayMapper;
 import org.phuongnq.analyzer.query.mapper.RecommendationCampaignMapper;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.OrderDay;
-import org.phuongnq.analyzer.query.model.OrderDelay;
+import org.phuongnq.analyzer.query.model.ConversionCurve;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,33 +115,53 @@ public class AffQuery {
             .list();
     }
 
-    public List<OrderDelay> getDistributeOrder(Long sId, LocalDate fromDate, LocalDate toDate) {
+    public List<ConversionCurve> getConversionCurve(Long sId, LocalDate date) {
         String sql = """
-                SELECT
-                 subId1 AS name,
-                 (clickTime::date) AS clickDate,
-                 (orderTime::date) AS orderDate,
-                 COUNT(DISTINCT orderId) AS delayedOrders,
-                 COALESCE(SUM(netAffiliateMarketingCommission),0) AS delayedRevenue,
-                 (orderTime::date) - (clickTime::date) AS delayDays
-               FROM orders
-               WHERE orderStatus != 'Đã hủy' AND sId = :sId
-                AND (clickTime::date) >= :from AND (clickTime::date) < :to
-               GROUP BY
-                 clickDate, orderDate, subId1
-               ORDER BY orderDate, clickDate
+                SELECT name, delay,
+                    COALESCE(SUM(orders), 0) AS orders,
+                    COALESCE(SUM(revenue), 0) AS revenue
+                FROM
+                    (
+                    SELECT subid1 AS name,
+                        (orderTime::date) - (clickTime::date) AS delay,
+                        COUNT(DISTINCT orderId) AS orders,
+                        COALESCE(SUM(totalProductCommission), 0) AS revenue
+                    FROM
+                        orders
+                    WHERE
+                        sId = :sId AND (clickTime::date) <= :date AND orderStatus != 'Đã hủy'
+                    GROUP BY
+                        subId1,
+                        (orderTime::date),
+                        (clickTime::date)
+                    ORDER BY delay
+                )
+                GROUP BY name, delay
+                ORDER BY name, delay
                """;
 
         Map<String, Object> params = new HashMap<>() {{
             put("sId", sId);
-            put("from", fromDate.atStartOfDay());
-            put("to", toDate.plusDays(1).atStartOfDay());
+            put("date", date);
         }};
 
         return jdbcClient.sql(sql)
             .params(params)
             .query(new OrderDelayMapper())
             .list();
+    }
+
+    public Map<String, Object> getLatestImportAndEvaluateRun(Long sid) {
+        String sql = """
+            SELECT
+            (SELECT MAX(orderTime::date) FROM orders WHERE sId = :sid) AS latestOrderImport,
+            (SELECT MAX(date) FROM ads WHERE sid = :sid) AS latestAdsImport,
+            (SELECT MAX(createdTime::date) FROM evaluateCampaignEfficiency WHERE sId = :sid) AS latestEvaluation
+            """;
+        return jdbcClient.sql(sql)
+            .param("sid", sid)
+            .query()
+            .singleRow();
     }
 
     @Transactional

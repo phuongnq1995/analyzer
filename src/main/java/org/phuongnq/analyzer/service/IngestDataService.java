@@ -1,7 +1,9 @@
 package org.phuongnq.analyzer.service;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,9 +14,12 @@ import org.phuongnq.analyzer.dto.aff.OrderDto;
 import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.AffQuery;
 import org.phuongnq.analyzer.query.BatchOperation;
+import org.phuongnq.analyzer.repository.UserImportRepository;
 import org.phuongnq.analyzer.repository.entity.Campaign;
 import org.phuongnq.analyzer.repository.entity.OrderLink;
 import org.phuongnq.analyzer.repository.entity.Shop;
+import org.phuongnq.analyzer.repository.entity.UserImport;
+import org.phuongnq.analyzer.service.recommendation.RecommendationService;
 import org.phuongnq.analyzer.utils.CSVHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +36,9 @@ public class IngestDataService {
     private final MappingService mappingService;
     private final UserService service;
     private final AggregationStatisticService statisticService;
+    private final ConversionCurveService conversionCurveService;
+    private final UserImportRepository userImportRepository;
+    private final RecommendationService recommendationService;
 
     @Transactional
     public void ingestOrders(MultipartFile file, DateRange input) {
@@ -58,6 +66,17 @@ public class IngestDataService {
         mappingService.mappingSameOrderSubIdsToCampaigns(sid, orderLinks);
 
         statisticService.cacheAggregates(shop, input);
+
+        conversionCurveService.ingestConversionCurves(shop);
+
+        userImportRepository.save(UserImport.builder()
+            .name("orders")
+            .shop(shop)
+            .dataDate(Timestamp.valueOf(orders.getFirst().getOrderTime()).toLocalDateTime().toLocalDate())
+            .createdTime(Instant.now())
+            .build());
+
+        recommendationService.checkAndStartEvaluate(shop);
     }
 
     @Transactional
@@ -85,5 +104,12 @@ public class IngestDataService {
         mappingService.mappingSameNameCampaignsToOrderLinks(sid, campaigns);
 
         statisticService.cacheAggregates(shop, input);
+
+        userImportRepository.save(UserImport.builder()
+            .name("ads")
+            .shop(shop)
+            .dataDate(LocalDate.parse(ads.getFirst().getDate()))
+            .createdTime(Instant.now())
+            .build());
     }
 }
