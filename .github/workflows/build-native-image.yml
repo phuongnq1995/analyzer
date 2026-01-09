@@ -32,13 +32,8 @@ jobs:
         run: echo "APP_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Build Native Image with Maven
-        run: ./mvnw clean package -Pnative
-
-      - name: Build and Push Docker Image (using Buildpacks)
-        run: |
-          ./mvnw spring-boot:build-image -Pnative \
-            -Dspring-boot.build-image.imageName=${{ secrets.DOCKERHUB_USERNAME }}/analyzer:${{ env.APP_VERSION }}
+      - name: Build Spring Boot application JAR
+        run: mvn clean package -DskipTests
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -59,5 +54,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # The native image is platform-dependent, so ensure the runner matches the target platform
-          # The default ubuntu-latest is linux/amd64
