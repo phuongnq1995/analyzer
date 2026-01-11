@@ -12,6 +12,16 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
+
+app:
+  cors:
+    allowed-origins: *
+
 logging:
   level:
     org:

@@ -20,11 +20,11 @@ spring:
       maximum-pool-size: 5
       minimum-idle: 5
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
     properties:
       hibernate:
         format_sql: false
@@ -58,8 +58,14 @@ jwt:
   secret: ${JWT_SECRET}
   #expiration-ms: 86400000
 
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
 springdoc:
   swagger-ui:
+    enabled: false
+  api-docs:
     enabled: false
 
 management:
