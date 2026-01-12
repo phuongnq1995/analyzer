@@ -1,5 +1,7 @@
 package org.phuongnq.analyzer.dto.aff;
 
+import java.time.LocalDate;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,10 +10,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RecommendationCampaign {
-    private Long id;
-    private String campaignName;
-    private int efficiencyLevel;
-    private String action;
-    private String advise;
+@Builder
+public class RecommendationDto {
+    private LocalDate evaluateDate;
+    private List<EvaluateCampaignDto> evaluateCampaigns;
 }

@@ -3,12 +3,10 @@ package org.phuongnq.analyzer.query;
 import java.time.*;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
-import org.phuongnq.analyzer.dto.aff.RecommendationCampaign;
 import org.phuongnq.analyzer.dto.req.DateRange;
 import org.phuongnq.analyzer.query.mapper.CampDayMapper;
 import org.phuongnq.analyzer.query.mapper.OrderDayMapper;
 import org.phuongnq.analyzer.query.mapper.OrderDelayMapper;
-import org.phuongnq.analyzer.query.mapper.RecommendationCampaignMapper;
 import org.phuongnq.analyzer.query.model.CampDay;
 import org.phuongnq.analyzer.query.model.OrderDay;
 import org.phuongnq.analyzer.query.model.ConversionCurve;
@@ -85,34 +83,6 @@ public class AffQuery {
             .param("from", input.getFromDate())
             .param("to", input.getToDate().plusDays(1))
             .update();
-    }
-
-    public Optional<Long> getLatestRecommendation(Long sId) {
-        String sql = """
-            SELECT id
-            FROM recommendation
-            WHERE sId = :sId
-            ORDER BY finishedTime DESC
-            FETCH FIRST 1 ROW ONLY
-            """;
-
-        return jdbcClient.sql(sql)
-            .param("sId", sId)
-            .query(Long.class)
-            .optional();
-    }
-
-    public List<RecommendationCampaign> getRecommendationCampaigns(Long recommendationId) {
-        String sql = """
-            SELECT id, campaignName, efficiencyLevel, action, advise
-            FROM recommendation_campaign
-            WHERE recommendationId = :recommendationId
-            """;
-
-        return jdbcClient.sql(sql)
-            .param("recommendationId", recommendationId)
-            .query(new RecommendationCampaignMapper())
-            .list();
     }
 
     public List<ConversionCurve> getConversionCurve(Long sId, LocalDate date) {

@@ -6,6 +6,18 @@ import java.math.RoundingMode;
 public final class MathUtils {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
+    public static int withPercentage(int value, float percentage) {
+        return withPercentageBigDecimal(BigDecimal.valueOf(value), percentage).intValue();
+    }
+
+    public static BigDecimal withPercentageBigDecimal(BigDecimal value, float percentage) {
+        if (percentage == 0) {
+            return BigDecimal.ZERO;
+        }
+        return value.divide(
+                BigDecimal.valueOf(percentage).divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP), 2, RoundingMode.HALF_UP);
+    }
+
     public static float toPercentageOf(BigDecimal value, BigDecimal total) {
         return toFloat(toPercentage(value, total));
     }

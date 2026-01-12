@@ -2,6 +2,7 @@ package org.phuongnq.analyzer.controller;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.phuongnq.analyzer.dto.aff.RecommendationDto;
 import org.phuongnq.analyzer.service.recommendation.RecommendationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +17,8 @@ public class RecommendationController {
     private final RecommendationService service;
 
     @GetMapping
-    public ResponseEntity<List> get() {
-        return ResponseEntity.ok(service.getRecommendations());
+    public ResponseEntity<RecommendationDto> get() {
+        return ResponseEntity.ok(service.getRecommendation());
     }
 
 }

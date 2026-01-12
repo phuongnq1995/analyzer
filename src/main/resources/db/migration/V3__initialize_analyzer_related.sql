@@ -17,13 +17,21 @@ CREATE TABLE IF NOT EXISTS userImport (
 );
 
 
+CREATE TABLE IF NOT EXISTS evaluateEfficiency (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+    evaluateDate   		  DATE,
+    errorStatus         VARCHAR(10000),
+    createdTime   		  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+);
+
+
 CREATE TABLE IF NOT EXISTS evaluateCampaignEfficiency (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
+    evaluateEfficiency  BIGINT NOT NULL REFERENCES evaluateEfficiency(id) ON DELETE CASCADE,
     name                VARCHAR(255),
     efficiencyLevel     VARCHAR(100),
-    briefStatusSummary  VARCHAR(500),
-    recommendedActions  VARCHAR(1000),
-    evaluateDate   		  DATE,
-    createdTime   		  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+    briefStatusSummary  VARCHAR(2000),
+    recommendedActions  VARCHAR(2000)
 );

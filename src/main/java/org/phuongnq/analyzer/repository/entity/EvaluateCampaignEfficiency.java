@@ -10,8 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,8 +34,10 @@ public class EvaluateCampaignEfficiency {
     private EfficiencyLevel efficiencyLevel;
     private String briefStatusSummary;
     private String recommendedActions;
-    private LocalDate evaluateDate;
-    private Instant createdTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evaluateEfficiencyId")
+    private EvaluateEfficiency evaluateEfficiency;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sId")

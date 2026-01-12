@@ -111,5 +111,7 @@ public class IngestDataService {
             .dataDate(LocalDate.parse(ads.getFirst().getDate()))
             .createdTime(Instant.now())
             .build());
+
+        recommendationService.checkAndStartEvaluate(shop);
     }
 }
