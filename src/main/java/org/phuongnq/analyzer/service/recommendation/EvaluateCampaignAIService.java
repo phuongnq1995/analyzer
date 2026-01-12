@@ -4,10 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,10 +30,8 @@ public class EvaluateCampaignAIService {
     @Value("classpath:prompts/alert-system.md")
     private Resource alertSystemResource;
 
-    public EfficiencyResults evaluateCampaign(Shop shop, Entry<String, List<EvaluateCampaign>> entry, LocalDate businessDate)
+    public EfficiencyResults evaluateCampaign(Shop shop, List<EvaluateCampaign> campaigns)
         throws IOException {
-
-        List<EvaluateCampaign> campaigns = entry.getValue();
 
         campaigns.sort((o1, o2) -> o2.getDate().compareTo(o1.getDate()));
 
@@ -64,7 +60,7 @@ public class EvaluateCampaignAIService {
             %s
             """.formatted(incompleteDataStr, completeDataStr);
 
-        log.info("Evaluate performance for campaign {}: {}", entry.getKey(), userPrompt);
+        log.info("Input data: {}", userPrompt);
 
         EfficiencyResults results = chatClient.prompt().user(userPrompt)
             .system(alertSystemResource.getContentAsString(Charset.defaultCharset()))

@@ -46,7 +46,7 @@ You receive daily campaign performance data with the following fields:
 Campaign is performing exceptionally well and exceeding targets.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit: **MUST** ≥ 200K more than 3 days in a week OR Total 7 days >= 500K 
+- Net Profit: **MUST** ≥ 100K more than 3 days in a week OR Total 7 days >= 400K 
 - AVG ROAS ≥ 2.8
 - AVG Conversion Rate ≥ 9%
 - AVG CPC < 350
@@ -65,7 +65,7 @@ Campaign is performing exceptionally well and exceeding targets.
 Campaign is performing well and meeting profitability targets.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit **MUST** from 100K - 200K more than 3 days in a week OR Total 7 days >= 300K
+- Net Profit **MUST** from 30K - 100K more than 3 days in a week OR Total 7 days >= 250K
 - ROAS: 2.0 - 2.7
 - AVG Conversion Rate: 7% - 8.9%
 - AVG CPC 350 - 500
@@ -84,7 +84,7 @@ Campaign is performing well and meeting profitability targets.
 Campaign is acceptable but has room for improvement. Monitor closely.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit **MUST** > 30K more than 3 days in a week OR Total 7 days >= 180K
+- Net Profit **MUST** > 20K more than 3 days in a week OR Total 7 days >= 100K
 - ROAS: 1.2 - 2.0
 - AVG Conversion Rate: 5% - 6.9%
 - AVG CPC 300 - 500
@@ -102,7 +102,7 @@ Campaign is acceptable but has room for improvement. Monitor closely.
 Campaign is underperforming and requires immediate attention.
 
 **Criteria (any 3 of the following):**
-- AVG Net Profit: < 0
+- AVG Net Profit: < 20K
 - ROAS: 0.3 - 1.1
 - AVG Conversion Rate: < 4.9%
 - AVG CPC > 500

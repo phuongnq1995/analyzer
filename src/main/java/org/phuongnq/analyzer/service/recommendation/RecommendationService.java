@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.phuongnq.analyzer.dto.aff.EvaluateCampaignDto;
@@ -142,7 +144,12 @@ public class RecommendationService {
 
             try {
 
-                EfficiencyResults results = evaluateCampaignAIService.evaluateCampaign(shop, entry, businessDate);
+                log.info("Evaluate performance for campaign {}", entry.getKey());
+
+                EfficiencyResults results = evaluateCampaignAIService.evaluateCampaign(shop, entry.getValue());
+
+                String recommendedActions = Arrays.stream(results.getRecommendedActions())
+                    .collect(Collectors.joining(EvaluateCampaignEfficiency.DELIMITER));
 
                 EvaluateCampaignEfficiency evaluateCampaignEfficiency = EvaluateCampaignEfficiency.builder()
                     .shop(shop)
@@ -150,7 +157,7 @@ public class RecommendationService {
                     .name(entry.getKey())
                     .efficiencyLevel(results.getEfficiencyLevel())
                     .briefStatusSummary(results.getBriefStatusTags())
-                    .recommendedActions(results.getRecommendedActions())
+                    .recommendedActions(recommendedActions)
                     .build();
 
                 evaluateEfficiency.addCampaignEfficiency(evaluateCampaignEfficiency);

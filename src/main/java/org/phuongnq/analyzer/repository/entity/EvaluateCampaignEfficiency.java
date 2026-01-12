@@ -26,6 +26,9 @@ import org.phuongnq.analyzer.query.model.EfficiencyLevel;
 @NoArgsConstructor
 public class EvaluateCampaignEfficiency {
 
+    public static final String DELIMITER = "$[DELIMITER]";
+    public static final String DELIMITER_ENCODE = "\\$\\[DELIMITER\\]";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
