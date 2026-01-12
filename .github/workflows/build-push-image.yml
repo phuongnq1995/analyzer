@@ -19,19 +19,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Make Maven Wrapper executable
-        if: contains(matrix.os, 'win') == false
-        run: chmod +x ./mvnw
-
-      - name: Build Spring Boot application JAR
-        run: mvn clean install -DskipTests
-
       - name: Extract project version from pom
         id: extract_version
         run: |
@@ -56,4 +43,4 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/analyzer:${{ steps.extract_version.outputs.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/analyzer:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
