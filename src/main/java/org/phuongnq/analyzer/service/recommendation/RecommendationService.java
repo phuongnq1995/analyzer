@@ -15,7 +15,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.phuongnq.analyzer.dto.aff.EvaluateCampaignDto;
@@ -27,6 +26,7 @@ import org.phuongnq.analyzer.query.model.evaluate.EfficiencyResults;
 import org.phuongnq.analyzer.query.model.evaluate.EvaluateCampaign;
 import org.phuongnq.analyzer.repository.ConversionCurvePercentageRepository;
 import org.phuongnq.analyzer.repository.EvaluateEfficiencyRepository;
+import org.phuongnq.analyzer.repository.ShopRepository;
 import org.phuongnq.analyzer.repository.UserImportRepository;
 import org.phuongnq.analyzer.repository.entity.ConversionCurvePercentage;
 import org.phuongnq.analyzer.repository.entity.EvaluateCampaignEfficiency;
@@ -34,7 +34,9 @@ import org.phuongnq.analyzer.repository.entity.EvaluateEfficiency;
 import org.phuongnq.analyzer.repository.entity.Shop;
 import org.phuongnq.analyzer.service.CacheService;
 import org.phuongnq.analyzer.service.UserService;
+import org.phuongnq.analyzer.service.event.IngestEvent;
 import org.phuongnq.analyzer.utils.MathUtils;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -48,6 +50,7 @@ public class RecommendationService {
     private final UserService userService;
     private final CacheService cacheService;
     private final UserImportRepository userImportRepository;
+    private final ShopRepository shopRepository;
     private final ConversionCurvePercentageRepository repository;
     private final EvaluateCampaignAIService evaluateCampaignAIService;
     private final EvaluateEfficiencyRepository efficiencyRepository;
@@ -78,8 +81,10 @@ public class RecommendationService {
     }
 
     @Async
+    @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void checkAndStartEvaluate(Shop shop) {
+    public void checkAndStartEvaluate(IngestEvent ingestEvent) {
+        Shop shop = shopRepository.findById(ingestEvent.getSid()).orElseThrow();
 
         // Business date
         LocalDate today = LocalDate.now();

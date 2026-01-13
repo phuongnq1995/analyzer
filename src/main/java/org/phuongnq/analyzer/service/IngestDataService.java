@@ -19,8 +19,10 @@ import org.phuongnq.analyzer.repository.entity.Campaign;
 import org.phuongnq.analyzer.repository.entity.OrderLink;
 import org.phuongnq.analyzer.repository.entity.Shop;
 import org.phuongnq.analyzer.repository.entity.UserImport;
+import org.phuongnq.analyzer.service.event.IngestEvent;
 import org.phuongnq.analyzer.service.recommendation.RecommendationService;
 import org.phuongnq.analyzer.utils.CSVHelper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,7 +40,7 @@ public class IngestDataService {
     private final AggregationStatisticService statisticService;
     private final ConversionCurveService conversionCurveService;
     private final UserImportRepository userImportRepository;
-    private final RecommendationService recommendationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void ingestOrders(MultipartFile file, DateRange input) {
@@ -76,7 +78,7 @@ public class IngestDataService {
             .createdTime(Instant.now())
             .build());
 
-        recommendationService.checkAndStartEvaluate(shop);
+        publishIngestEvent(sid);
     }
 
     @Transactional
@@ -112,6 +114,10 @@ public class IngestDataService {
             .createdTime(Instant.now())
             .build());
 
-        recommendationService.checkAndStartEvaluate(shop);
+        publishIngestEvent(sid);
+    }
+
+    private void publishIngestEvent(Long sid) {
+        eventPublisher.publishEvent(new IngestEvent(this, sid));
     }
 }

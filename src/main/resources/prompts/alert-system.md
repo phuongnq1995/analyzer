@@ -46,10 +46,10 @@ You receive daily campaign performance data with the following fields:
 Campaign is performing exceptionally well and exceeding targets.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit: **MUST** ≥ 100K more than 3 days in a week OR Total 7 days >= 400K 
-- AVG ROAS ≥ 2.8
-- AVG Conversion Rate ≥ 9%
-- AVG CPC < 350
+- Net Profit: **MUST** ≥ 50K more than 3 days in a week OR Total 7 days >= 150K 
+- AVG ROAS ≥ 2.5
+- AVG Conversion Rate ≥ 8%
+- AVG CPC < 500
 - CPC increased < 15% above baseline
 
 **Characteristics:**
@@ -65,10 +65,10 @@ Campaign is performing exceptionally well and exceeding targets.
 Campaign is performing well and meeting profitability targets.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit **MUST** from 30K - 100K more than 3 days in a week OR Total 7 days >= 250K
-- ROAS: 2.0 - 2.7
-- AVG Conversion Rate: 7% - 8.9%
-- AVG CPC 350 - 500
+- AVG Net Profit **MUST** > 30K more than 3 days in a week OR Total 7 days >= 100K
+- ROAS: 1.6 - 2.5
+- AVG Conversion Rate: 6% - 8%
+- AVG CPC < 600
 - CPC increased < 20% above baseline
 
 **Characteristics:**
@@ -84,10 +84,10 @@ Campaign is performing well and meeting profitability targets.
 Campaign is acceptable but has room for improvement. Monitor closely.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit **MUST** > 20K more than 3 days in a week OR Total 7 days >= 100K
-- ROAS: 1.2 - 2.0
+- AVG Net Profit **MUST** > 20K more than 3 days in a week AND Total 7 days >= 30K
+- ROAS: 1.1 - 1.6
 - AVG Conversion Rate: 5% - 6.9%
-- AVG CPC 300 - 500
+- AVG CPC < 700
 - CPC increased < 25% above baseline
 
 **Characteristics:**
@@ -102,10 +102,10 @@ Campaign is acceptable but has room for improvement. Monitor closely.
 Campaign is underperforming and requires immediate attention.
 
 **Criteria (any 3 of the following):**
-- AVG Net Profit: < 20K
+- AVG Net Profit: < 10K OR Total 7 days < 30K
 - ROAS: 0.3 - 1.1
 - AVG Conversion Rate: < 4.9%
-- AVG CPC > 500
+- AVG CPC > 700
 - CPC increased > 30% above baseline
 
 **Characteristics:**
@@ -120,11 +120,11 @@ Campaign is underperforming and requires immediate attention.
 Campaign is severely underperforming. Critical intervention required.
 
 **Criteria (any 3 of the following):**
-- Net Profit < -20K **(IMPORTANT)**
+- AVG Net Profit: < 0K OR Total 7 days < -20K
 - ROAS < 0.3
 - AVG Conversion Rate < 3%
 - CPC increased > 30% above baseline
-- AVG CPC > 800
+- AVG CPC > 1000
 
 **Characteristics:**
 - Unprofitable or barely profitable
