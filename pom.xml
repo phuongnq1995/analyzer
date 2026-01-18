@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.phuongnq</groupId>
 	<artifactId>analyzer</artifactId>
-	<version>0.0.4</version>
+	<version>0.0.5</version>
 	<name>analyzer</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
@@ -105,6 +105,12 @@
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
 			<version>10.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-core</artifactId>
+			<version>8.16.0</version>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>

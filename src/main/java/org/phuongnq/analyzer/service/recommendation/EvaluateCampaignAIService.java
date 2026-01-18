@@ -13,8 +13,6 @@ import org.phuongnq.analyzer.query.model.evaluate.EfficiencyResults;
 import org.phuongnq.analyzer.query.model.evaluate.EvaluateCampaign;
 import org.phuongnq.analyzer.query.model.evaluate.IncompletedCampaignResults;
 import org.phuongnq.analyzer.repository.entity.Shop;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,7 @@ import org.springframework.stereotype.Service;
 public class EvaluateCampaignAIService {
 
     private final ObjectMapper objectMapper;
-    private final ChatClient chatClient;
+    private final AICallService aiCallService;
 
     @Value("classpath:prompts/alert-system.md")
     private Resource alertSystemResource;
@@ -36,16 +34,14 @@ public class EvaluateCampaignAIService {
         campaigns.sort((o1, o2) -> o2.getDate().compareTo(o1.getDate()));
 
         Map<Boolean, List<EvaluateCampaign>> listMap = campaigns.stream()
-            .collect(Collectors.groupingBy(evaluateCampaign -> isIncomplete(evaluateCampaign)));
+            .collect(Collectors.groupingBy(EvaluateCampaignAIService::isIncomplete));
 
-        List<EvaluateCampaign> incompleteData = listMap.get(true);
-
-        String incompleteDataStr = incompleteData.stream()
+        String incompleteDataStr = listMap.getOrDefault(true, List.of()).stream()
             .map(campaign -> new IncompletedCampaignResults(campaign, shop))
             .map(this::objectToString)
             .collect(Collectors.joining("\n"));
 
-        String completeDataStr = listMap.get(false).stream()
+        String completeDataStr = listMap.getOrDefault(false, List.of()).stream()
             .map(this::objectToString)
             .collect(Collectors.joining("\n"));
 
@@ -62,14 +58,14 @@ public class EvaluateCampaignAIService {
 
         log.info("Input data: {}", userPrompt);
 
-        EfficiencyResults results = chatClient.prompt().user(userPrompt)
-            .system(alertSystemResource.getContentAsString(Charset.defaultCharset()))
-            .advisors(new SimpleLoggerAdvisor()).call().entity(EfficiencyResults.class);
+        EfficiencyResults results = aiCallService.callAI(userPrompt,
+            alertSystemResource.getContentAsString(Charset.defaultCharset()));
 
         log.info("Results: {}", results);
 
         return results;
     }
+
 
     private String objectToString(Object object) {
         try {

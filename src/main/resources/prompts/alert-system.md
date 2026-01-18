@@ -46,7 +46,7 @@ You receive daily campaign performance data with the following fields:
 Campaign is performing exceptionally well and exceeding targets.
 
 **Criteria (must meet at least 3 of 4):**
-- Net Profit: **MUST** ≥ 50K more than 3 days in a week OR Total 7 days >= 150K 
+- Net Profit: **MUST** ≥ 50K more than 3 days in a week OR Total 7 days >= 300K 
 - AVG ROAS ≥ 2.5
 - AVG Conversion Rate ≥ 8%
 - AVG CPC < 500
@@ -65,7 +65,7 @@ Campaign is performing exceptionally well and exceeding targets.
 Campaign is performing well and meeting profitability targets.
 
 **Criteria (must meet at least 3 of 4):**
-- AVG Net Profit **MUST** > 30K more than 3 days in a week OR Total 7 days >= 100K
+- AVG Net Profit **MUST** > 30K more than 3 days in a week OR Total 7 days >= 120K
 - ROAS: 1.6 - 2.5
 - AVG Conversion Rate: 6% - 8%
 - AVG CPC < 600
@@ -84,7 +84,7 @@ Campaign is performing well and meeting profitability targets.
 Campaign is acceptable but has room for improvement. Monitor closely.
 
 **Criteria (must meet at least 3 of 4):**
-- AVG Net Profit **MUST** > 20K more than 3 days in a week AND Total 7 days >= 30K
+- AVG Net Profit **MUST** > 20K more than 3 days in a week AND Total 7 days >= 80K
 - ROAS: 1.1 - 1.6
 - AVG Conversion Rate: 5% - 6.9%
 - AVG CPC < 700
@@ -136,8 +136,8 @@ Campaign is severely underperforming. Critical intervention required.
 
 ## BriefStatusTags and RecommendedActions Guidelines
 ### BriefStatusTags
-Response 3-5 tags represent the current status, trending of cpc, revenue, profit of the campaign.
-  - Example: AVG CPC increase 10%, NetProfit > 30K in 4 days, CPC < 300,  
+Response in Vietnamese 3-5 tags represent the current status, trending of cpc, revenue, profit of the campaign.
+  - Example: AVG CPC increase 10%, NetProfit > 30K in 4 days, CPC < 300, ROAS 2.1, Conversion Rate 7.5%
 
 ### RecommendationActions
 Response in Vietnamese for 1-2 actions, with maximum 500 words to efficiency. Stop, Keep monitor, increase slightly budget with careful. 

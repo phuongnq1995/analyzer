@@ -72,6 +72,7 @@ public class RecommendationService {
         List<EvaluateCampaignDto> evaluateCampaigns = latestEvaluate.getCampaignEfficiencies()
             .stream()
             .map(EvaluateCampaignDto::new)
+            .sorted((o1, o2) -> o2.getLevel().getValue() -  o1.getLevel().getValue())
             .toList();
 
         return RecommendationDto.builder()
@@ -149,7 +150,7 @@ public class RecommendationService {
 
             try {
 
-                log.info("Evaluate performance for campaign {}", entry.getKey());
+                log.info("Evaluate performance for campaign: {}", entry.getKey());
 
                 EfficiencyResults results = evaluateCampaignAIService.evaluateCampaign(shop, entry.getValue());
 
@@ -184,7 +185,7 @@ public class RecommendationService {
 
     @NotNull
     private static Predicate<Entry<String, List<EvaluateCampaign>>> filterValidCampaign(LocalDate businessDate) {
-        return stringListEntry -> stringListEntry.getValue().size() >= 5
+        return stringListEntry -> stringListEntry.getValue().size() >= 3
             && stringListEntry.getValue().stream().map(EvaluateCampaign::getDate)
             .anyMatch(date -> date.isEqual(businessDate));
     }
