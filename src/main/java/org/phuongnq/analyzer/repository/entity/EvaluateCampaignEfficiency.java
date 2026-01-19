@@ -1,8 +1,7 @@
 package org.phuongnq.analyzer.repository.entity;
 
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -33,7 +32,7 @@ public class EvaluateCampaignEfficiency {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = EvaluateLevelAttributeConverter.class)
     private EfficiencyLevel efficiencyLevel;
     private String briefStatusSummary;
     private String recommendedActions;
