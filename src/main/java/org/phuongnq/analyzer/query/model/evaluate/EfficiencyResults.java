@@ -11,8 +11,8 @@ import org.phuongnq.analyzer.query.model.EfficiencyLevel;
 @NoArgsConstructor
 public class EfficiencyResults {
     private EfficiencyLevel efficiencyLevel;
-    @JsonPropertyDescription("Vietnamese response, lower than 200 words")
-    private String briefStatusTags;
-    @JsonPropertyDescription("Vietnamese response, 1 - 2 recommendation actions, maximum 300 words")
+    @JsonPropertyDescription("Vietnamese response, maximum 300 words")
+    private String briefStatusSummary;
+    @JsonPropertyDescription("Vietnamese response, 1 - 2 recommendation actions, maximum 500 words")
     private String[] recommendedActions;
 }

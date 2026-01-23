@@ -28,6 +28,7 @@ public class EvaluateCampaignAIService {
     @Value("classpath:prompts/alert-system.md")
     private Resource alertSystemResource;
 
+
     public EfficiencyResults evaluateCampaign(Shop shop, List<EvaluateCampaign> campaigns)
         throws IOException {
 

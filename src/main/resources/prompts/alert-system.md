@@ -134,13 +134,14 @@ Campaign is severely underperforming. Critical intervention required.
 
 ---
 
-## BriefStatusTags and RecommendedActions Guidelines
-### BriefStatusTags
-Response in Vietnamese 3-5 tags represent the current status, trending of cpc, revenue, profit of the campaign.
-  - Example: AVG CPC increase 10%, NetProfit > 30K in 4 days, CPC < 300, ROAS 2.1, Conversion Rate 7.5%
+## briefStatusSummary and recommendedActions Guidelines
+### briefStatusSummary
+Response in Vietnamese for summary of current status, trending of cpc, revenue, profit of the campaign. Use data points to support your summary within 300 words.
+  - Example: Efficient performance with stable AVG CPC 400, NetProfit > 50K in 3 days, ROAS 2.5, Conversion Rate 7.5%.
+  - Example: Underperforming with rising AVG CPC 800 (+25%), NetProfit < 10K in 5 days, ROAS 0.9, Conversion Rate 4.2%.
 
-### RecommendationActions
-Response in Vietnamese for 1-2 actions, with maximum 500 words to efficiency. Stop, Keep monitor, increase slightly budget with careful. 
+### recommendationActions
+Response in Vietnamese for 1-2 actions, with maximum 500 words to improve performance. Stop, Keep monitor, increase slightly budget with careful. 
 
 ### Communication Tone
 - Be direct and data-driven

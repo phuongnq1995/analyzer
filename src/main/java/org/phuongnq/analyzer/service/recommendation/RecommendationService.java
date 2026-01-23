@@ -4,19 +4,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
 import org.phuongnq.analyzer.dto.aff.EvaluateCampaignDto;
 import org.phuongnq.analyzer.dto.aff.RecommendationDto;
 import org.phuongnq.analyzer.query.model.AggregationByDateResult;
@@ -130,7 +127,7 @@ public class RecommendationService {
         }
 
         Map<String, List<EvaluateCampaign>> validEvaluateCampaigns = campaignEvaluates.entrySet().stream()
-            .filter(filterValidCampaign(businessDate))
+            .filter(entry -> filterValidCampaign(entry.getValue(), businessDate))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
         if (validEvaluateCampaigns.isEmpty()) {
@@ -154,15 +151,15 @@ public class RecommendationService {
 
                 EfficiencyResults results = evaluateCampaignAIService.evaluateCampaign(shop, entry.getValue());
 
-                String recommendedActions = Arrays.stream(results.getRecommendedActions())
-                    .collect(Collectors.joining(EvaluateCampaignEfficiency.DELIMITER));
+                String recommendedActions = String.join(EvaluateCampaignEfficiency.DELIMITER,
+                    results.getRecommendedActions());
 
                 EvaluateCampaignEfficiency evaluateCampaignEfficiency = EvaluateCampaignEfficiency.builder()
                     .shop(shop)
                     .evaluateEfficiency(evaluateEfficiency)
                     .name(entry.getKey())
                     .efficiencyLevel(results.getEfficiencyLevel())
-                    .briefStatusSummary(results.getBriefStatusTags())
+                    .briefStatusSummary(results.getBriefStatusSummary())
                     .recommendedActions(recommendedActions)
                     .build();
 
@@ -170,7 +167,7 @@ public class RecommendationService {
 
             } catch (Exception e) {
                 log.error("Error", e);
-                errorCampaigns.add("campaign: %s, error: %s".formatted(entry.getKey(), e.getMessage()));
+                errorCampaigns.add("campaign: %s, error: %s".formatted(entry.getKey(), e.getClass().getSimpleName()));
 
                 // TODO: Adding to errorList and retry later
             }
@@ -183,10 +180,12 @@ public class RecommendationService {
         efficiencyRepository.save(evaluateEfficiency);
     }
 
-    @NotNull
-    private static Predicate<Entry<String, List<EvaluateCampaign>>> filterValidCampaign(LocalDate businessDate) {
-        return stringListEntry -> stringListEntry.getValue().size() >= 3
-            && stringListEntry.getValue().stream().map(EvaluateCampaign::getDate)
-            .anyMatch(date -> date.isEqual(businessDate));
+    private static boolean filterValidCampaign(List<EvaluateCampaign> values, LocalDate businessDate) {
+        if (values.size() < 3) {
+            return false;
+        }
+        return values.stream()
+                .map(EvaluateCampaign::getDate)
+                .anyMatch(date -> date.isEqual(businessDate));
     }
 }
