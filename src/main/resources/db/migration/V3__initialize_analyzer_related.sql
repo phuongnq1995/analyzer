@@ -13,16 +13,16 @@ CREATE TABLE IF NOT EXISTS userImport (
     sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
     name                VARCHAR(255),
     dataDate            DATE,
-    createdTime   		  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+    createdTime   		TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
 );
 
 
 CREATE TABLE IF NOT EXISTS evaluateEfficiency (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
-    evaluateDate   		  DATE,
+    evaluateDate   		DATE,
     errorStatus         VARCHAR(10000),
-    createdTime   		  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+    createdTime   		TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_evaluateEfficiency_sid_evaluateDate ON evaluateEfficiency (sId, evaluateDate);
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS evaluateCampaignEfficiency (
     sId                  BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
     evaluateEfficiencyId BIGINT NOT NULL REFERENCES evaluateEfficiency(id) ON DELETE CASCADE,
     name                 VARCHAR(255),
+    createdTime   		 TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
     efficiencyLevel      VARCHAR(100),
     briefStatusSummary   VARCHAR(2000),
     recommendedActions   VARCHAR(2000)

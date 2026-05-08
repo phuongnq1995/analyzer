@@ -10,6 +10,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -19,6 +20,7 @@ public class AICallService {
     private final AIRateLimitService aiRateLimitService;
     private final ChatClient chatClient;
 
+    @Transactional(readOnly = true)
     @Retryable(retryFor = ClientException.class, maxAttempts = 3, backoff = @Backoff(delay = 5000, multiplier = 2))
     public EfficiencyResults callAI(String userPrompt, String systemPrompt) {
 

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -29,6 +30,7 @@ public class AIRateLimitService {
         resetModelLimits();
     }
 
+    @Transactional(readOnly = true)
     public String getAvailableModel() {
         return modelLimits.stream()
             .sorted(Comparator.comparingInt(AiRateLimit::getPriority))
@@ -38,6 +40,7 @@ public class AIRateLimitService {
             .orElseThrow(() -> new RuntimeException("AI rate limit exceeded for all models"));
     }
 
+    @Transactional(readOnly = true)
     public void lockModel(String model) {
         log.warn("Locking AI model {} due to error.", model);
         modelLimits.stream()
@@ -74,7 +77,7 @@ public class AIRateLimitService {
 
         modelLimits.add(createRateLimit("gemini-2.5-flash", 0, 5, 20));
         modelLimits.add(createRateLimit("gemini-2.5-flash-lite", 10,10, 20));
-        modelLimits.add(createRateLimit("gemini-3-flash-preview", 20, 5, 20));
+        modelLimits.add(createRateLimit("gemini-3.1-flash-lite-preview", 20, 15, 500));
         modelLimits.add(createRateLimit("gemma-3-27b-it",30, 30, 20));
         modelLimits.add(createRateLimit("gemma-3-12b-it", 40, 30, 14400));
         modelLimits.add(createRateLimit("gemma-3-4b-it", 50, 30, 14400));

@@ -1,40 +1,16 @@
 package org.phuongnq.analyzer.service.recommendation;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.Period;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.phuongnq.analyzer.dto.aff.EvaluateCampaignDto;
 import org.phuongnq.analyzer.dto.aff.RecommendationDto;
-import org.phuongnq.analyzer.query.model.AggregationByDateResult;
-import org.phuongnq.analyzer.query.model.CampaignEfficiency;
-import org.phuongnq.analyzer.query.model.DelayPeriod;
-import org.phuongnq.analyzer.query.model.evaluate.EfficiencyResults;
-import org.phuongnq.analyzer.query.model.evaluate.EvaluateCampaign;
-import org.phuongnq.analyzer.repository.ConversionCurvePercentageRepository;
 import org.phuongnq.analyzer.repository.EvaluateEfficiencyRepository;
-import org.phuongnq.analyzer.repository.ShopRepository;
-import org.phuongnq.analyzer.repository.UserImportRepository;
-import org.phuongnq.analyzer.repository.entity.ConversionCurvePercentage;
-import org.phuongnq.analyzer.repository.entity.EvaluateCampaignEfficiency;
 import org.phuongnq.analyzer.repository.entity.EvaluateEfficiency;
 import org.phuongnq.analyzer.repository.entity.Shop;
-import org.phuongnq.analyzer.service.CacheService;
 import org.phuongnq.analyzer.service.UserService;
-import org.phuongnq.analyzer.service.event.IngestEvent;
-import org.phuongnq.analyzer.utils.MathUtils;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,11 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecommendationService {
 
     private final UserService userService;
-    private final CacheService cacheService;
-    private final UserImportRepository userImportRepository;
-    private final ShopRepository shopRepository;
-    private final ConversionCurvePercentageRepository repository;
-    private final EvaluateCampaignAIService evaluateCampaignAIService;
     private final EvaluateEfficiencyRepository efficiencyRepository;
 
     @Transactional(readOnly = true)
@@ -78,114 +49,8 @@ public class RecommendationService {
             .build();
     }
 
-    @Async
-    @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void checkAndStartEvaluate(IngestEvent ingestEvent) {
-        Shop shop = shopRepository.findById(ingestEvent.getSid()).orElseThrow();
-
-        // Business date
-        LocalDate today = LocalDate.now();
-        LocalDate businessDate = LocalDate.now().minusDays(1);
-
-        boolean hasBothImportByDataDate = userImportRepository.hasBothImportByDataDate(shop.getId(), businessDate, today);
-
-        if (!hasBothImportByDataDate) {
-            return;
-        }
-
-        Map<Pair<String, DelayPeriod>, ConversionCurvePercentage> percentageMap = repository.findAll().stream()
-            .collect(Collectors.toMap(ccp -> Pair.of(ccp.getName(), ccp.getPeriod()), Function.identity()));
-
-        List<AggregationByDateResult> data = cacheService.getAggregateByClick(shop.getId(), businessDate.minusDays(6),
-            businessDate);
-
-        Map<String, List<EvaluateCampaign>> campaignEvaluates = new HashMap<>();
-
-        for (AggregationByDateResult result : data) {
-
-            List<CampaignEfficiency> campaignEfficiencies = result.getCampaignEfficiencies().stream().filter(
-                campaignEfficiency -> campaignEfficiency.getClicks() != 0 && !MathUtils.isZero(
-                    campaignEfficiency.getSpent())).toList();
-
-            LocalDate date = result.getDate();
-            int days = Period.between(date, businessDate).getDays();
-            DelayPeriod delayPeriod = DelayPeriod.fromDelay(days);
-
-            for (CampaignEfficiency efficiency : campaignEfficiencies) {
-
-                String name = efficiency.getName();
-
-                List<EvaluateCampaign> campaignList = campaignEvaluates.computeIfAbsent(name, s -> new ArrayList<>());
-
-                ConversionCurvePercentage ccp = percentageMap.getOrDefault(Pair.of(name, delayPeriod),
-                    ConversionCurvePercentage.defaultValue());
-
-                campaignList.add(
-                    new EvaluateCampaign(date, efficiency, ccp.getOrderPercentage(), ccp.getRevenuePercentage()));
-            }
-        }
-
-        Map<String, List<EvaluateCampaign>> validEvaluateCampaigns = campaignEvaluates.entrySet().stream()
-            .filter(entry -> filterValidCampaign(entry.getValue(), businessDate))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
-        if (validEvaluateCampaigns.isEmpty()) {
-            log.warn("There are no valid evaluate campaigns for {}, {}", shop.getId(), businessDate);
-            return;
-        }
-
-        EvaluateEfficiency evaluateEfficiency = EvaluateEfficiency.builder()
-            .shop(shop)
-            .evaluateDate(businessDate)
-            .createdTime(Instant.now())
-            .build();
-
-        List<String> errorCampaigns = new ArrayList<>();
-
-        for (Map.Entry<String, List<EvaluateCampaign>> entry : validEvaluateCampaigns.entrySet()) {
-
-            try {
-
-                log.info("Evaluate performance for campaign: {}", entry.getKey());
-
-                EfficiencyResults results = evaluateCampaignAIService.evaluateCampaign(shop, entry.getValue());
-
-                String recommendedActions = String.join(EvaluateCampaignEfficiency.DELIMITER,
-                    results.getRecommendedActions());
-
-                EvaluateCampaignEfficiency evaluateCampaignEfficiency = EvaluateCampaignEfficiency.builder()
-                    .shop(shop)
-                    .evaluateEfficiency(evaluateEfficiency)
-                    .name(entry.getKey())
-                    .efficiencyLevel(results.getEfficiencyLevel())
-                    .briefStatusSummary(results.getBriefStatusSummary())
-                    .recommendedActions(recommendedActions)
-                    .build();
-
-                evaluateEfficiency.addCampaignEfficiency(evaluateCampaignEfficiency);
-
-            } catch (Exception e) {
-                log.error("Error", e);
-                errorCampaigns.add("campaign: %s, error: %s".formatted(entry.getKey(), e.getClass().getSimpleName()));
-
-                // TODO: Adding to errorList and retry later
-            }
-        }
-
-        String status = String.join(",", errorCampaigns);
-
-        evaluateEfficiency.setErrorStatus(status);
-
+    public void saveEvaluateEfficiency(EvaluateEfficiency evaluateEfficiency) {
         efficiencyRepository.save(evaluateEfficiency);
-    }
-
-    private static boolean filterValidCampaign(List<EvaluateCampaign> values, LocalDate businessDate) {
-        if (values.size() < 3) {
-            return false;
-        }
-        return values.stream()
-                .map(EvaluateCampaign::getDate)
-                .anyMatch(date -> date.isEqual(businessDate));
     }
 }
