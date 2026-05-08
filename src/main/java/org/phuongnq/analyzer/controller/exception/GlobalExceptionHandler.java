@@ -11,12 +11,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @InitBinder
@@ -25,11 +25,17 @@ public class GlobalExceptionHandler {
         binder.registerCustomEditor(String.class, trimmerEditor);
     }
 
-    @ExceptionHandler(value = {ConstraintViolationException.class, AuthenticationException.class})
+    @ExceptionHandler(value = {AuthenticationException.class})
+    public ResponseEntity<APIResponse> handleAuthenticationException(Exception ex) {
+        log.error("Invalid Credentials exception: {}", ex);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(createAPIResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(value = {ConstraintViolationException.class})
     public ResponseEntity<APIResponse> handleValidationExceptions(Exception ex) {
         log.error("Validation exception: {}", ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(createAPIResponse(ex.getMessage()));
+            .body(createAPIResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(value = {MethodArgumentNotValidException.class})
@@ -57,8 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<APIResponse> handleInternalServerError(Exception ex) {
         log.error("Internal Server Error: {}", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(createAPIResponse(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(createAPIResponse(ex.getMessage()));
     }
 
     private APIResponse createAPIResponse(String message) {

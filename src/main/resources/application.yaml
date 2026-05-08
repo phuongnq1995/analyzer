@@ -2,6 +2,8 @@
 server:
   port: ${PORT:8080}
   forward-headers-strategy: framework
+  tomcat:
+    max-threads: 20
 
 spring:
   application:
@@ -18,11 +20,11 @@ spring:
       maximum-pool-size: 5
       minimum-idle: 5
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
     properties:
       hibernate:
         format_sql: false
@@ -36,14 +38,35 @@ spring:
       file-size-threshold: 2MB
       max-file-size: 200MB
       max-request-size: 200MB
-
+  ai:
+    model:
+      chat: google-genai
+    google:
+      genai:
+        api-key: ${AI_API_KEY}
+        chat:
+          options:
+            model: gemini-2.5-flash-lite
+  data:
+    redis:
+      url: ${REDIS_URL}
+  jackson:
+    serialization:
+      write-dates-as-timestamps: true
+      write-big-decimal-as-plain: true
 jwt:
   secret: ${JWT_SECRET}
   #expiration-ms: 86400000
 
-admin:
-  user: admin
-  password: admin
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
 
 management:
   endpoints:

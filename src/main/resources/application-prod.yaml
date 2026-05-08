@@ -1,0 +1,6 @@
+# Server Configuration
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  tomcat:
+    max-threads: 100

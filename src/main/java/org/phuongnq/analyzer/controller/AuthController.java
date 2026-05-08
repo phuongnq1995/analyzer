@@ -11,7 +11,6 @@ import org.phuongnq.analyzer.security.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
@@ -33,15 +32,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest req) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
-            );
-        } catch (AuthenticationException ex) {
-            return ResponseEntity.status(401).body("Invalid credentials");
-        }
-
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest req) {
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
+        );
         UserDetails ud = userDetailsService.loadUserByUsername(req.getUsername());
         String token = jwtService.generateToken(ud);
         return ResponseEntity.ok(new AuthResponse(token, new UserInfo("", ud.getUsername())));

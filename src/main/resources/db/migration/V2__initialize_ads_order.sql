@@ -134,25 +134,6 @@ CREATE TABLE campaign (
   name            VARCHAR(500),
   unmapped        BOOLEAN DEFAULT FALSE,
   normalizedName  VARCHAR(255),
-  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL,
+  orderLinkId     BIGINT REFERENCES orderLink(id) ON DELETE CASCADE DEFAULT NULL
   UNIQUE (sId, name)
-);
-
-CREATE TABLE recommendation (
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sId                 BIGINT NOT NULL REFERENCES shop(id) ON DELETE CASCADE,
-    status              INT,
-    requestTime         TIMESTAMP WITHOUT TIME ZONE,
-    createdAt           TIMESTAMP WITHOUT TIME ZONE,
-    finishedTime        TIMESTAMP WITHOUT TIME ZONE,
-    content             VARCHAR(2000)
-);
-
-CREATE TABLE recommendation_campaign (
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    recommendation_id   BIGINT NOT NULL REFERENCES recommendation(id) ON DELETE CASCADE,
-    campaignName        VARCHAR(255),
-    efficiencyLevel     INT,
-    action              VARCHAR(255),
-    advise              VARCHAR(500)
 );

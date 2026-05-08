@@ -28,6 +28,6 @@ public class StatisticController {
             to = LocalDate.now();
         }
 
-        return ResponseEntity.ok(service.getCompareAggregationStatistics(from, to, type));
+        return ResponseEntity.ok(service.getAggregationStatistics(from, to, type));
     }
 }
