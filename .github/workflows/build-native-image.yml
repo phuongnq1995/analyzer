@@ -1,0 +1,39 @@
+name: Build Spring Boot Native Image and Push to Docker Hub
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21' # Use Java 21 or later for modern Spring Boot native support
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract project version (Optional, for dynamic tagging)
+        run: echo "APP_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Build and Push Docker Image (using Buildpacks)
+        # The image name must follow the format 'dockerhub_username/repository_name:tag'
+        run: |
+          ./mvnw spring-boot:build-image -Pnative \
+            -Dspring-boot.build-image.imageName=${{ secrets.DOCKERHUB_USERNAME }}/your-repo-name:${{ env.APP_VERSION }}
